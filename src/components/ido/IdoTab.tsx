@@ -278,11 +278,11 @@ export default function IdoTab({
         try {
             setLoading(true);
             showToast('Approving MOTO spend for IDO...', 'info');
-            // Infinite: max uint256, Limited: 1M MOTO (enough for many buys)
+            // Infinite: max uint256, Limited: 10,000 MOTO (covers max user cap of ~7,000 MOTO)
             const MAX_UINT256: bigint = (1n << 256n) - 1n;
             const approveAmount: bigint = infiniteApproval
                 ? MAX_UINT256
-                : BitcoinUtils.expandToDecimals(1_000_000, MOTO_DECIMALS);
+                : BitcoinUtils.expandToDecimals(10_000, MOTO_DECIMALS);
             const motoContract: OP20Contract | null = getOP20ContractCached(CONTRACTS.MOTO_TOKEN);
             if (!motoContract) throw new Error('MOTO contract not available');
             const idoAddress = await provider!.getPublicKeyInfo(CONTRACTS.BLOCK_IDO, true);
@@ -522,7 +522,7 @@ export default function IdoTab({
                                     <span className="ido-infinite-hint">
                                         {infiniteApproval
                                             ? 'No re-approval needed — revoke anytime via BlockRevoke'
-                                            : 'Limited to 1M MOTO — may need re-approval for large buys'}
+                                            : 'Limited to 10,000 MOTO — covers full wallet cap'}
                                     </span>
                                 </label>
                                 <button
