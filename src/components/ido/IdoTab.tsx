@@ -89,6 +89,8 @@ export default function IdoTab({
     const [motoAmount, setMotoAmount] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [approvePending, setApprovePending] = useState<boolean>(false);
+    const [buyPending, setBuyPending] = useState<boolean>(false);
+    const [pendingBlockEstimate, setPendingBlockEstimate] = useState<bigint>(0n);
     const [infiniteApproval, setInfiniteApproval] = useState<boolean>(false);
 
     const loadIDOInfo = useCallback(async (): Promise<void> => {
@@ -116,6 +118,8 @@ export default function IdoTab({
         setMotoAllowance(null);
         setAllowanceLoaded(false);
         setMotoAmount('');
+        setBuyPending(false);
+        setPendingBlockEstimate(0n);
     }, [address]);
 
     const loadUserData = useCallback(async (): Promise<void> => {
@@ -171,6 +175,11 @@ export default function IdoTab({
     const totalCap: bigint = phaseCap > 0n ? phaseCap * 3n : 105_000_000_000_000n;
     const overallProgress: number = totalCap > 0n ? Number(totalSold * 10000n / totalCap) / 100 : 0;
     const phaseProgress: number = phaseCap > 0n ? Number(phaseSold * 10000n / phaseCap) / 100 : 0;
+    // Pending purchase progress (pulsing segment on bars)
+    const pendingOverallPct: number = buyPending && pendingBlockEstimate > 0n && totalCap > 0n
+        ? Number(pendingBlockEstimate * 10000n / totalCap) / 100 : 0;
+    const pendingPhasePct: number = buyPending && pendingBlockEstimate > 0n && phaseCap > 0n
+        ? Number(pendingBlockEstimate * 10000n / phaseCap) / 100 : 0;
 
     const isMainnet: boolean = NETWORK_NAME === 'mainnet';
     const idoEnded: boolean = phase === 0 && totalSold > 0n;
@@ -227,6 +236,9 @@ export default function IdoTab({
             if (Date.now() - startTime > MAX_POLL_MS) {
                 if (pollBuyRef.current) clearInterval(pollBuyRef.current);
                 pollBuyRef.current = null;
+                setBuyPending(false);
+                setPendingBlockEstimate(0n);
+                showToast('Buy confirmation timed out — check your balance manually', 'info');
                 return;
             }
             try {
@@ -253,6 +265,8 @@ export default function IdoTab({
                     setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 10));
                     setPaused(!!info.paused);
                     setUserPurchases(newUserPurchases);
+                    setBuyPending(false);
+                    setPendingBlockEstimate(0n);
                     // Refresh MOTO balance + header balances
                     loadUserData();
                     if (onBalanceRefresh) onBalanceRefresh();
@@ -327,10 +341,13 @@ export default function IdoTab({
             const props = result?.properties;
             const received: bigint = BigInt(props?.blockReceived as bigint ?? 0);
             if (received > 0n) {
-                showToast(`Bought ${formatBlock(received)} $BLOCK!`, 'success');
+                showToast(`TX sent \u2014 ${formatBlock(received)} $BLOCK pending confirmation...`, 'success');
             } else {
-                showToast('Buy TX sent! Wait for next block to see results.', 'success');
+                showToast('Buy TX sent! Waiting for block confirmation...', 'success');
             }
+            // Store pending state so UI shows "waiting" until on-chain confirm
+            setBuyPending(true);
+            setPendingBlockEstimate(received > 0n ? received : estimatedBlock);
             setMotoAmount('');
             // Start polling for on-chain confirmation (every 10s, up to 1h)
             startPollingBuy(totalSold, userPurchases);
@@ -391,6 +408,15 @@ export default function IdoTab({
                 </div>
                 <div className="ido-progress-bar ido-progress-phased">
                     <div className="ido-progress-fill" style={{ width: Math.min(overallProgress, 100) + '%' }} />
+                    {pendingOverallPct > 0 && (
+                        <div
+                            className="ido-progress-pending"
+                            style={{
+                                left: Math.min(overallProgress, 100) + '%',
+                                width: Math.min(pendingOverallPct, 100 - overallProgress) + '%',
+                            }}
+                        />
+                    )}
                     <div className="ido-phase-marker" style={{ left: '33.33%' }} />
                     <div className="ido-phase-marker" style={{ left: '66.66%' }} />
                 </div>
@@ -412,6 +438,15 @@ export default function IdoTab({
                         </div>
                         <div className="ido-progress-bar">
                             <div className="ido-progress-fill ido-orange-fill" style={{ width: Math.min(phaseProgress, 100) + '%' }} />
+                            {pendingPhasePct > 0 && (
+                                <div
+                                    className="ido-progress-pending ido-pending-orange"
+                                    style={{
+                                        left: Math.min(phaseProgress, 100) + '%',
+                                        width: Math.min(pendingPhasePct, 100 - phaseProgress) + '%',
+                                    }}
+                                />
+                            )}
                         </div>
                         <div className="ido-progress-stats">
                             <span className="ido-mono">{formatBlock(phaseSold)} SOLD</span>
@@ -539,26 +574,40 @@ export default function IdoTab({
                                 </div>
                             </>
                         ) : (
-                            <button
-                                className="ido-primary-btn"
-                                onClick={handleBuy}
-                                disabled={loading || !isConnected || motoRaw <= 0n || idoNotStarted || testnetPreview}
-                            >
-                                {loading ? 'PROCESSING...' : !isConnected ? 'CONNECT WALLET' : 'BUY $BLOCK'}
-                            </button>
+                            <>
+                                <button
+                                    className="ido-primary-btn"
+                                    onClick={handleBuy}
+                                    disabled={loading || buyPending || !isConnected || motoRaw <= 0n || idoNotStarted || testnetPreview}
+                                >
+                                    {loading ? 'PROCESSING...' : buyPending ? 'WAITING FOR BLOCK...' : !isConnected ? 'CONNECT WALLET' : 'BUY $BLOCK'}
+                                </button>
+                                {buyPending && (
+                                    <div className="ido-buy-pending">
+                                        <div className="ido-buy-pending-spinner" />
+                                        <span>Purchase pending {'\u2014'} ~{formatBlock(pendingBlockEstimate)} $BLOCK waiting for block confirmation</span>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </>
                 )}
             </div>
 
             {/* User purchases + wallet cap */}
-            {isConnected && userPurchases > 0n && (
+            {isConnected && (userPurchases > 0n || buyPending) && (
                 <div className="ido-card ido-user-card">
                     <div className="ido-section-title">YOUR PURCHASES</div>
                     <div className="ido-user-total">
                         <div className="ido-user-val">{formatBlock(userPurchases)}</div>
                         <div className="ido-user-label">$BLOCK PURCHASED</div>
                     </div>
+                    {buyPending && pendingBlockEstimate > 0n && (
+                        <div className="ido-pending-purchase">
+                            <div className="ido-buy-pending-spinner" />
+                            <span>+{formatBlock(pendingBlockEstimate)} $BLOCK pending confirmation</span>
+                        </div>
+                    )}
                     <div className="ido-cap-section">
                         <div className="ido-progress-header">
                             <span className="ido-mono">WALLET CAP</span>
