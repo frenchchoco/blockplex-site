@@ -183,10 +183,11 @@ export default function IdoTab({
     const nearCap: boolean = userPurchases > 0n && userRemaining < estimatedBlock && estimatedBlock > 0n;
 
     const pollAllowanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const pollBuyRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const startPollingAllowance = useCallback((): void => {
         if (pollAllowanceRef.current) clearInterval(pollAllowanceRef.current);
-        const MAX_POLL_MS = 15 * 60_000;
+        const MAX_POLL_MS = 60 * 60_000; // 1 hour — blocks can be slow on mainnet
         const startTime = Date.now();
 
         pollAllowanceRef.current = setInterval(async () => {
@@ -213,12 +214,61 @@ export default function IdoTab({
             } catch {
                 // Silently retry
             }
-        }, 5_000);
+        }, 10_000); // every 10s
     }, [getOP20ContractCached, provider, address]);
+
+    const startPollingBuy = useCallback((prevTotalSold: bigint, prevUserPurchases: bigint): void => {
+        if (pollBuyRef.current) clearInterval(pollBuyRef.current);
+        const MAX_POLL_MS = 60 * 60_000; // 1 hour
+        const startTime = Date.now();
+
+        pollBuyRef.current = setInterval(async () => {
+            if (Date.now() - startTime > MAX_POLL_MS) {
+                if (pollBuyRef.current) clearInterval(pollBuyRef.current);
+                pollBuyRef.current = null;
+                return;
+            }
+            try {
+                // Check IDO state
+                const info = await readContract(CONTRACTS.BLOCK_IDO, BLOCK_IDO_ABI, 'getIDOInfo');
+                if (!info) return;
+                const newTotalSold: bigint = BigInt(info.totalSold as bigint ?? 0);
+
+                // Check user purchases
+                let newUserPurchases: bigint = prevUserPurchases;
+                if (address) {
+                    const purchases = await readContract(CONTRACTS.BLOCK_IDO, BLOCK_IDO_ABI, 'getUserPurchases', [address]);
+                    if (purchases) newUserPurchases = BigInt(purchases.totalBlock as bigint ?? 0);
+                }
+
+                if (newTotalSold !== prevTotalSold || newUserPurchases !== prevUserPurchases) {
+                    // Buy confirmed — update all state
+                    setPhase(Number(info.phase ?? 0));
+                    setTotalSold(newTotalSold);
+                    setPhaseSold(BigInt(info.phaseSold as bigint ?? 0));
+                    setPhaseCap(BigInt(info.phaseCap as bigint ?? 0));
+                    setBonusBps(BigInt(info.bonusBps as bigint ?? 0));
+                    setTotalMotoRaised(BigInt(info.totalMotoRaised as bigint ?? 0));
+                    setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 10));
+                    setPaused(!!info.paused);
+                    setUserPurchases(newUserPurchases);
+                    // Refresh MOTO balance + header balances
+                    loadUserData();
+                    if (onBalanceRefresh) onBalanceRefresh();
+                    showToast('Purchase confirmed on-chain!', 'success');
+                    if (pollBuyRef.current) clearInterval(pollBuyRef.current);
+                    pollBuyRef.current = null;
+                }
+            } catch {
+                // Silently retry
+            }
+        }, 10_000); // every 10s
+    }, [readContract, address, loadUserData, onBalanceRefresh, showToast]);
 
     useEffect(() => {
         return () => {
             if (pollAllowanceRef.current) clearInterval(pollAllowanceRef.current);
+            if (pollBuyRef.current) clearInterval(pollBuyRef.current);
         };
     }, []);
 
@@ -277,11 +327,8 @@ export default function IdoTab({
                 showToast('Buy TX sent! Wait for next block to see results.', 'success');
             }
             setMotoAmount('');
-            setTimeout((): void => {
-                loadIDOInfo();
-                loadUserData();
-                if (onBalanceRefresh) onBalanceRefresh();
-            }, 5000);
+            // Start polling for on-chain confirmation (every 10s, up to 1h)
+            startPollingBuy(totalSold, userPurchases);
         } catch (e) {
             console.error('[IDO Buy] error:', e);
             const msg = friendlyWalletError(e);
