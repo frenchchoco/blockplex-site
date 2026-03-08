@@ -186,7 +186,7 @@ export default function IdoTab({
 
     const startPollingAllowance = useCallback((): void => {
         if (pollAllowanceRef.current) clearInterval(pollAllowanceRef.current);
-        const MAX_POLL_MS = 5 * 60_000;
+        const MAX_POLL_MS = 15 * 60_000;
         const startTime = Date.now();
 
         pollAllowanceRef.current = setInterval(async () => {
