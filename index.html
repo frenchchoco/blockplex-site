@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlockPlex — The Block Ecosystem on Bitcoin</title>
+  <meta name="description" content="BlockPlex is a suite of decentralized applications built on OP_NET, Bitcoin Layer 1. Explore BlockRite, BlockLottery, BlockTip, BlockBill, and BlockRevoke.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #06050e;
+      --bg-surface: #0c0b18;
+      --bg-card: rgba(255,255,255,0.03);
+      --border-card: rgba(255,255,255,0.06);
+      --text-primary: #f0eef6;
+      --text-secondary: #8a87a0;
+      --text-muted: #5c596e;
+      --accent-orange: #f7931a;
+      --accent-cyan: #00e5ff;
+      --accent-violet: #9b5bff;
+      --accent-pink: #ff3c8e;
+      --gradient-hero: linear-gradient(135deg, #f7931a 0%, #ff3c8e 40%, #9b5bff 70%, #00e5ff 100%);
+      --gradient-glow: radial-gradient(ellipse at 50% 0%, rgba(155,91,255,0.15) 0%, transparent 60%);
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* ======== NOISE OVERLAY ======== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ======== GRID BACKGROUND ======== */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 80px 80px;
+      pointer-events: none;
+      z-index: 0;
+      mask-image: radial-gradient(ellipse at 50% 30%, black 20%, transparent 70%);
+    }
+
+    /* ======== AMBIENT GLOW ORBS ======== */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: rgba(247,147,26,0.08);
+      top: -10%; left: -5%;
+      animation: float1 20s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: rgba(155,91,255,0.1);
+      top: 30%; right: -10%;
+      animation: float2 25s ease-in-out infinite;
+    }
+    .orb-3 {
+      width: 400px; height: 400px;
+      background: rgba(0,229,255,0.06);
+      bottom: 10%; left: 20%;
+      animation: float3 22s ease-in-out infinite;
+    }
+
+    @keyframes float1 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(60px, 40px); }
+    }
+    @keyframes float2 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-50px, 60px); }
+    }
+    @keyframes float3 {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(40px, -50px); }
+    }
+
+    /* ======== LAYOUT ======== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ======== NAVIGATION ======== */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      backdrop-filter: blur(20px);
+      background: rgba(6,5,14,0.7);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: all 0.3s ease;
+    }
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      text-decoration: none;
+    }
+    .logo .logo-block {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: 0.1em;
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .logo .logo-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--gradient-hero);
+      margin: 0 8px;
+      border-radius: 1px;
+      opacity: 0.6;
+    }
+    .logo .logo-plex {
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-size: 1rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      line-height: 1;
+    }
+    /* Footer smaller variant */
+    .logo.logo-sm .logo-block { font-size: 1rem; }
+    .logo.logo-sm .logo-sep { height: 14px; margin: 0 6px; }
+    .logo.logo-sm .logo-plex { font-size: 0.8rem; }
+    /* Hero inline variant */
+    .logo.logo-hero {
+      display: inline-flex;
+      vertical-align: baseline;
+    }
+    .logo.logo-hero .logo-block {
+      font-size: inherit;
+      letter-spacing: 0.05em;
+    }
+    .logo.logo-hero .logo-sep {
+      height: 0.7em;
+      margin: 0 0.15em;
+      align-self: center;
+    }
+    .logo.logo-hero .logo-plex {
+      font-size: 0.55em;
+      align-self: baseline;
+      letter-spacing: 0.2em;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(247,147,26,0.15);
+      color: var(--accent-orange);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(247,147,26,0.2);
+    }
+
+    /* ======== HERO ======== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    #galaxy-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-orange);
+      background: rgba(247,147,26,0.08);
+      border: 1px solid rgba(247,147,26,0.15);
+      padding: 8px 20px;
+      border-radius: 100px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease-out both;
+    }
+    .hero-tag::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--accent-orange);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s 0.15s ease-out both;
+    }
+    .hero h1 .logo {
+      display: inline-flex;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      animation: fadeUp 0.8s 0.3s ease-out both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.8s 0.45s ease-out both;
+    }
+
+    .btn-primary {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+      padding: 16px 36px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      background: var(--gradient-hero);
+      color: #fff;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.3s;
+      box-shadow: 0 4px 30px rgba(247,147,26,0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(247,147,26,0.35);
+    }
+
+    .btn-ghost {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+      padding: 16px 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      background: rgba(255,255,255,0.03);
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    /* ======== TECH STRIP ======== */
+    .tech-strip {
+      padding: 32px 0;
+      border-top: 1px solid var(--border-card);
+      border-bottom: 1px solid var(--border-card);
+      margin-bottom: 80px;
+    }
+    .tech-strip .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 48px;
+      flex-wrap: wrap;
+    }
+    .tech-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tech-item svg {
+      width: 20px; height: 20px;
+      opacity: 0.5;
+    }
+
+    /* ======== SECTION TITLES ======== */
+    .section-label {
+      font-family: var(--font-display);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--accent-violet);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ======== dAPPS SECTION ======== */
+    .dapps-section {
+      padding: 100px 0;
+    }
+    .dapps-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .dapps-header .section-desc {
+      margin: 0 auto;
+    }
+
+    .dapps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .dapps-grid-row2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 20px;
+      max-width: 66.666%;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .dapp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 20px;
+      padding: 36px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: default;
+    }
+    .dapp-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--card-accent);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .dapp-card:hover {
+      border-color: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
+      transform: translateY(-4px);
+    }
+    .dapp-card:hover::before { opacity: 1; }
+
+    .dapp-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      background: var(--icon-bg);
+      border: 1px solid var(--icon-border);
+    }
+
+    .dapp-card h3 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+    .dapp-card .dapp-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--tag-color);
+      background: var(--tag-bg);
+      padding: 4px 10px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    .dapp-card p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+    .dapp-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .dapp-feature {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 5px 12px;
+      border-radius: 8px;
+    }
+    .dapp-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 20px;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
+      color: var(--tag-color);
+      text-decoration: none;
+      padding: 8px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--tag-bg);
+      background: var(--tag-bg);
+      transition: all 0.3s;
+    }
+    .dapp-link:hover {
+      background: transparent;
+      border-color: var(--tag-color);
+    }
+    .dapp-link svg {
+      width: 14px; height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* $BLOCK Token Banner */
+    .token-banner {
+      padding: 80px 0 0;
+    }
+    .token-inner {
+      background: linear-gradient(135deg, rgba(247,147,26,0.06) 0%, rgba(155,91,255,0.06) 50%, rgba(0,229,255,0.06) 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 24px;
+      padding: 48px;
+      display: flex;
+      align-items: center;
+      gap: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .token-inner::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 0; right: 0;
+      height: 2px;
+      background: var(--gradient-hero);
+    }
+    .token-glyph {
+      flex-shrink: 0;
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-orange), var(--accent-violet));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: #fff;
+      box-shadow: 0 0 40px rgba(247,147,26,0.25), 0 0 80px rgba(155,91,255,0.15);
+    }
+    .token-text h3 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.6rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+    .token-text h3 span {
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .token-text p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 600px;
+    }
+    .token-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .token-pill {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(247,147,26,0.1);
+      color: var(--accent-orange);
+      border: 1px solid rgba(247,147,26,0.15);
+    }
+
+    /* Card color variations */
+    .dapp-card.rite {
+      --card-accent: var(--accent-orange);
+      --icon-bg: rgba(247,147,26,0.1);
+      --icon-border: rgba(247,147,26,0.15);
+      --tag-color: var(--accent-orange);
+      --tag-bg: rgba(247,147,26,0.1);
+    }
+    .dapp-card.lottery {
+      --card-accent: var(--accent-violet);
+      --icon-bg: rgba(155,91,255,0.1);
+      --icon-border: rgba(155,91,255,0.15);
+      --tag-color: var(--accent-violet);
+      --tag-bg: rgba(155,91,255,0.1);
+    }
+    .dapp-card.tip {
+      --card-accent: var(--accent-cyan);
+      --icon-bg: rgba(0,229,255,0.1);
+      --icon-border: rgba(0,229,255,0.15);
+      --tag-color: var(--accent-cyan);
+      --tag-bg: rgba(0,229,255,0.1);
+    }
+    .dapp-card.bill {
+      --card-accent: var(--accent-pink);
+      --icon-bg: rgba(255,60,142,0.1);
+      --icon-border: rgba(255,60,142,0.15);
+      --tag-color: var(--accent-pink);
+      --tag-bg: rgba(255,60,142,0.1);
+    }
+    .dapp-card.revoke {
+      --card-accent: #ff5555;
+      --icon-bg: rgba(255,85,85,0.1);
+      --icon-border: rgba(255,85,85,0.15);
+      --tag-color: #ff5555;
+      --tag-bg: rgba(255,85,85,0.1);
+    }
+
+    /* ======== ABOUT SECTION ======== */
+    .about-section {
+      padding: 100px 0;
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    .about-visual {
+      position: relative;
+      height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 800px;
+    }
+    .orrery {
+      width: 320px; height: 320px;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: orrery-drift 30s ease-in-out infinite;
+    }
+    @keyframes orrery-drift {
+      0%, 100% { transform: rotateX(15deg) rotateY(0deg); }
+      25% { transform: rotateX(20deg) rotateY(8deg); }
+      50% { transform: rotateX(12deg) rotateY(-5deg); }
+      75% { transform: rotateX(18deg) rotateY(-8deg); }
+    }
+
+    .orbit-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) translateZ(0);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%, rgba(30,25,50,0.95), rgba(6,5,14,0.98));
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 0 30px rgba(247,147,26,0.2), 0 0 60px rgba(155,91,255,0.1), inset 0 0 20px rgba(155,91,255,0.05);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      backface-visibility: hidden;
+    }
+    .orbit-center .logo-block {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 0.95rem;
+      letter-spacing: 0.12em;
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+    .orbit-center .logo-divider {
+      width: 28px;
+      height: 1px;
+      background: var(--gradient-hero);
+      margin: 4px 0;
+      border-radius: 1px;
+    }
+    .orbit-center .logo-plex {
+      font-family: var(--font-body);
+      font-weight: 300;
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      line-height: 1;
+    }
+    /* Center glow */
+    .orbit-center::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(247,147,26,0.2) 0%, transparent 70%);
+      z-index: -1;
+      animation: center-pulse 3s ease-in-out infinite;
+    }
+    @keyframes center-pulse {
+      0%, 100% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+      50% { transform: translate(-50%,-50%) scale(1.4); opacity: 0.2; }
+    }
+
+    /* Each orbit ring */
+    .orbit-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.06);
+      transform-style: preserve-3d;
+    }
+    .orbit-ring::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* 5 orbits with different sizes and 3D tilts */
+    .orbit-ring:nth-child(1) {
+      width: 140px; height: 140px;
+      margin: -70px 0 0 -70px;
+      transform: rotateX(70deg) rotateY(20deg);
+      animation: orbit-spin-1 12s linear infinite;
+    }
+    .orbit-ring:nth-child(2) {
+      width: 190px; height: 190px;
+      margin: -95px 0 0 -95px;
+      transform: rotateX(55deg) rotateY(-35deg);
+      animation: orbit-spin-2 18s linear infinite;
+    }
+    .orbit-ring:nth-child(3) {
+      width: 240px; height: 240px;
+      margin: -120px 0 0 -120px;
+      transform: rotateX(40deg) rotateY(50deg);
+      animation: orbit-spin-3 24s linear infinite;
+    }
+    .orbit-ring:nth-child(4) {
+      width: 280px; height: 280px;
+      margin: -140px 0 0 -140px;
+      transform: rotateX(65deg) rotateY(-15deg) rotateZ(25deg);
+      animation: orbit-spin-4 30s linear infinite;
+    }
+    .orbit-ring:nth-child(5) {
+      width: 320px; height: 320px;
+      margin: -160px 0 0 -160px;
+      transform: rotateX(50deg) rotateY(35deg) rotateZ(-20deg);
+      animation: orbit-spin-5 36s linear infinite;
+    }
+
+    @keyframes orbit-spin-1 { from { transform: rotateX(70deg) rotateY(20deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateY(20deg) rotateZ(360deg); } }
+    @keyframes orbit-spin-2 { from { transform: rotateX(55deg) rotateY(-35deg) rotateZ(0deg); } to { transform: rotateX(55deg) rotateY(-35deg) rotateZ(360deg); } }
+    @keyframes orbit-spin-3 { from { transform: rotateX(40deg) rotateY(50deg) rotateZ(0deg); } to { transform: rotateX(40deg) rotateY(50deg) rotateZ(360deg); } }
+    @keyframes orbit-spin-4 { from { transform: rotateX(65deg) rotateY(-15deg) rotateZ(25deg); } to { transform: rotateX(65deg) rotateY(-15deg) rotateZ(385deg); } }
+    @keyframes orbit-spin-5 { from { transform: rotateX(50deg) rotateY(35deg) rotateZ(-20deg); } to { transform: rotateX(50deg) rotateY(35deg) rotateZ(340deg); } }
+
+    /* Dots on each orbit */
+    .orbit-dot {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      top: -6px;
+      left: 50%;
+      margin-left: -6px;
+      box-shadow: 0 0 12px var(--dot-color), 0 0 24px var(--dot-color);
+      /* Counter-rotate so dot stays upright visually */
+      transform-style: preserve-3d;
+    }
+    .orbit-ring:nth-child(1) .orbit-dot {
+      background: var(--accent-orange);
+      --dot-color: rgba(247,147,26,0.5);
+    }
+    .orbit-ring:nth-child(2) .orbit-dot {
+      background: var(--accent-violet);
+      --dot-color: rgba(155,91,255,0.5);
+    }
+    .orbit-ring:nth-child(3) .orbit-dot {
+      background: var(--accent-cyan);
+      --dot-color: rgba(0,229,255,0.5);
+    }
+    .orbit-ring:nth-child(4) .orbit-dot {
+      background: var(--accent-pink);
+      --dot-color: rgba(255,60,142,0.5);
+    }
+    .orbit-ring:nth-child(5) .orbit-dot {
+      background: #ff5555;
+      --dot-color: rgba(255,85,85,0.5);
+    }
+
+    /* Trailing glow on each dot */
+    .orbit-dot::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--dot-color) 0%, transparent 70%);
+      animation: dot-glow 2s ease-in-out infinite;
+    }
+    @keyframes dot-glow {
+      0%, 100% { opacity: 0.8; transform: translate(-50%,-50%) scale(1); }
+      50% { opacity: 0.3; transform: translate(-50%,-50%) scale(1.5); }
+    }
+
+    .about-text .section-title span {
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .about-text p {
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+    .about-stats {
+      display: flex;
+      gap: 40px;
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border-card);
+    }
+    .stat-item .stat-number {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 2rem;
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-item .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+
+    /* ======== FOOTER ======== */
+    footer {
+      padding: 60px 0;
+      border-top: 1px solid var(--border-card);
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .footer-left {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .footer-left .logo {
+      margin-bottom: 8px;
+    }
+    .footer-right {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-right a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      transition: color 0.3s;
+    }
+    .footer-right a:hover { color: var(--text-primary); }
+
+    /* ======== ANIMATIONS ======== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ======== RESPONSIVE ======== */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .dapps-grid { grid-template-columns: 1fr; }
+      .dapps-grid-row2 { grid-template-columns: 1fr; max-width: 100%; }
+      .about-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+      .about-visual { height: 280px; perspective: 500px; }
+      .orrery { width: 240px; height: 240px; }
+      .about-stats { gap: 24px; }
+      .hero { padding: 120px 24px 60px; }
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-right { justify-content: center; }
+      .token-inner { flex-direction: column; text-align: center; padding: 36px 24px; gap: 24px; }
+      .token-text p { max-width: 100%; }
+      .token-pills { justify-content: center; }
+    }
+    @media (max-width: 1024px) and (min-width: 769px) {
+      .dapps-grid { grid-template-columns: repeat(2, 1fr); }
+      .dapps-grid-row2 { grid-template-columns: 1fr; max-width: 50%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient -->
+  <div class="grid-bg"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="container">
+      <div class="logo"><span class="logo-block">BLOCK</span><span class="logo-sep"></span><span class="logo-plex">plex</span></div>
+      <ul class="nav-links">
+        <li><a href="#dapps">dApps</a></li>
+        <li><a href="#about">About</a></li>
+        <li><span class="nav-badge">OP_NET &bull; Bitcoin L1</span></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <canvas id="galaxy-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-tag">Built on Bitcoin Layer 1</div>
+      <h1>The <span class="logo logo-hero"><span class="logo-block">BLOCK</span><span class="logo-sep"></span><span class="logo-plex">plex</span></span> Ecosystem</h1>
+      <p class="hero-sub">
+        A suite of decentralized applications built on OP_NET.
+        Vesting, lottery, tips, billing, approvals — fully on-chain, fully transparent.
+      </p>
+      <div class="hero-actions">
+        <a href="#dapps" class="btn-primary">Explore the dApps</a>
+        <a href="#about" class="btn-ghost">Learn more</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Strip -->
+  <div class="tech-strip">
+    <div class="container">
+      <div class="tech-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Bitcoin L1
+      </div>
+      <div class="tech-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        OP_NET
+      </div>
+      <div class="tech-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/></svg>
+        OP_20 Tokens
+      </div>
+      <div class="tech-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        AssemblyScript
+      </div>
+    </div>
+  </div>
+
+  <!-- dApps -->
+  <section class="dapps-section" id="dapps">
+    <div class="container">
+      <div class="dapps-header reveal">
+        <div class="section-label">Ecosystem</div>
+        <h2 class="section-title">Five dApps. One token. One ecosystem.</h2>
+        <p class="section-desc">
+          Every Block application is powered by $BLOCK, the native OP_20 token 
+          that unifies the ecosystem — from vesting to lottery to tips.
+        </p>
+      </div>
+
+      <!-- $BLOCK Token Banner -->
+      <div class="token-banner reveal">
+        <div class="token-inner">
+          <div class="token-glyph">$B</div>
+          <div class="token-text">
+            <h3>The <span>$BLOCK</span> token</h3>
+            <p>
+              $BLOCK is the native OP_20 token at the heart of every BlockPlex dApp. 
+              It serves as the utility and governance token across the entire ecosystem — 
+              used for vesting schedules, lottery entries, tipping, invoice payments, and approval management.
+              One token, endless possibilities.
+            </p>
+            <div class="token-pills">
+              <span class="token-pill">OP_20 Standard</span>
+              <span class="token-pill">Utility Token</span>
+              <span class="token-pill">Cross-dApp</span>
+              <span class="token-pill">Bitcoin L1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 1: 3 cards -->
+      <div class="dapps-grid" style="margin-top:48px;">
+        <!-- BlockRite -->
+        <div class="dapp-card rite reveal">
+          <div class="dapp-icon">🔒</div>
+          <h3>BlockRite</h3>
+          <span class="dapp-tag">Token Vesting</span>
+          <p>
+            Token vesting platform for OP_20 tokens with cliff periods, 
+            linear vesting, multi-beneficiary management, and LP token locking.
+          </p>
+          <div class="dapp-features">
+            <span class="dapp-feature">Cliff & Linear</span>
+            <span class="dapp-feature">Multi-beneficiary</span>
+            <span class="dapp-feature">LP Lock</span>
+          </div>
+          <a href="https://blockrite.xyz" class="dapp-link" target="_blank" rel="noopener">
+            Launch App <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+          </a>
+        </div>
+
+        <!-- BlockLottery -->
+        <div class="dapp-card lottery reveal">
+          <div class="dapp-icon">🎰</div>
+          <h3>BlockLottery</h3>
+          <span class="dapp-tag">Lottery</span>
+          <p>
+            Decentralized lottery system powered by three smart contracts: 
+            BlockToken, BlockSale, and BlockLottery. Transparent and verifiable draws.
+          </p>
+          <div class="dapp-features">
+            <span class="dapp-feature">3 Contracts</span>
+            <span class="dapp-feature">Provably Fair</span>
+            <span class="dapp-feature">Token Sale</span>
+          </div>
+          <a href="https://blocklottery.org" class="dapp-link" target="_blank" rel="noopener">
+            Launch App <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+          </a>
+        </div>
+
+        <!-- BlockTip -->
+        <div class="dapp-card tip reveal">
+          <div class="dapp-icon">💸</div>
+          <h3>BlockTip</h3>
+          <span class="dapp-tag">Tips & Donations</span>
+          <p>
+            Send tips in OP_20 tokens directly on-chain. 
+            Simple, fast, no middleman. Perfect for creators and communities.
+          </p>
+          <div class="dapp-features">
+            <span class="dapp-feature">Instant Tips</span>
+            <span class="dapp-feature">OP_20 Native</span>
+            <span class="dapp-feature">No Middleman</span>
+          </div>
+          <a href="https://blocktip.vercel.app" class="dapp-link" target="_blank" rel="noopener">
+            Launch App <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Row 2: 2 cards centered -->
+      <div class="dapps-grid-row2">
+        <!-- BlockBill -->
+        <div class="dapp-card bill reveal">
+          <div class="dapp-icon">📄</div>
+          <h3>BlockBill</h3>
+          <span class="dapp-tag">Billing & Invoicing</span>
+          <p>
+            Decentralized billing and recurring payments on Bitcoin. 
+            Create, send, and track your invoices directly on-chain.
+          </p>
+          <div class="dapp-features">
+            <span class="dapp-feature">Recurring</span>
+            <span class="dapp-feature">Invoice Tracking</span>
+            <span class="dapp-feature">On-chain Proof</span>
+          </div>
+          <a href="https://blockbill-eight.vercel.app" class="dapp-link" target="_blank" rel="noopener">
+            Launch App <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+          </a>
+        </div>
+
+        <!-- BlockRevoke -->
+        <div class="dapp-card revoke reveal">
+          <div class="dapp-icon">🛡️</div>
+          <h3>BlockRevoke</h3>
+          <span class="dapp-tag">Security & Approvals</span>
+          <p>
+            Manage and revoke your token approvals on OP_NET. 
+            Visualize all active authorizations and protect your funds.
+          </p>
+          <div class="dapp-features">
+            <span class="dapp-feature">Approval Scanner</span>
+            <span class="dapp-feature">One-click Revoke</span>
+            <span class="dapp-feature">Wallet Security</span>
+          </div>
+          <a href="https://blockrevoke.com" class="dapp-link" target="_blank" rel="noopener">
+            Launch App <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="about-section" id="about">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-visual reveal">
+          <div class="orrery">
+            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+            <div class="orbit-ring"><div class="orbit-dot"></div></div>
+            <div class="orbit-center">
+              <span class="logo-block">BLOCK</span>
+              <span class="logo-divider"></span>
+              <span class="logo-plex">plex</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-text reveal">
+          <div class="section-label">About</div>
+          <h2 class="section-title">
+            Native DeFi on <span>Bitcoin</span>
+          </h2>
+          <p>
+            BlockPlex was born from a simple conviction: Bitcoin deserves its own ecosystem of 
+            decentralized applications, with no compromise on decentralization.
+          </p>
+          <p>
+            Built on OP_NET, every dApp in the Block ecosystem interacts 
+            directly with smart contracts deployed on Bitcoin Layer 1. 
+            No bridges, no intermediate layers — just code and the blockchain.
+          </p>
+          <p>
+            Developed by <strong>frenchchoco</strong>, active contributor to the OP_NET ecosystem 
+            and Bitcoin enthusiast since block one.
+          </p>
+          <div class="about-stats">
+            <div class="stat-item">
+              <div class="stat-number">5</div>
+              <div class="stat-label">dApps</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">L1</div>
+              <div class="stat-label">Bitcoin Native</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">100%</div>
+              <div class="stat-label">On-chain</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-left">
+          <div class="logo logo-sm"><span class="logo-block">BLOCK</span><span class="logo-sep"></span><span class="logo-plex">plex</span></div>
+          <p>&copy; 2026 BlockPlex. Built on Bitcoin with OP_NET.</p>
+        </div>
+        <div class="footer-right">
+          <a href="https://github.com/frenchchoco" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://x.com/frenchchoco" target="_blank" rel="noopener">𝕏 Twitter</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scroll reveal -->
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, i * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Smooth nav bg on scroll
+    const nav = document.querySelector('nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 60) {
+        nav.style.background = 'rgba(6,5,14,0.92)';
+      } else {
+        nav.style.background = 'rgba(6,5,14,0.7)';
+      }
+    });
+  </script>
+
+  <!-- Three.js Galaxy -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (() => {
+    const canvas = document.getElementById('galaxy-canvas');
+    if (!canvas) return;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.set(0, 1.8, 4.5);
+    camera.lookAt(0, 0, 0);
+
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+
+    // --- Galaxy parameters ---
+    const ARMS = 5;
+    const PARTICLES = 12000;
+    const RADIUS = 5.5;
+    const BRANCH_SPREAD = 0.7;
+    const SPIN = 1.8;
+    const CORE_PARTICLES = 3000;
+
+    // --- Color palette matching brand ---
+    const colOrange = new THREE.Color('#f7931a');
+    const colViolet = new THREE.Color('#9b5bff');
+    const colCyan   = new THREE.Color('#00e5ff');
+    const colPink   = new THREE.Color('#ff3c8e');
+    const colWhite  = new THREE.Color('#c8c4d8');
+    const armColors = [colOrange, colViolet, colCyan, colPink, colWhite];
+
+    // --- Galaxy spiral arms ---
+    const galaxyGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(PARTICLES * 3);
+    const colors    = new Float32Array(PARTICLES * 3);
+    const sizes     = new Float32Array(PARTICLES);
+    const randoms   = new Float32Array(PARTICLES); // for animation offset
+
+    for (let i = 0; i < PARTICLES; i++) {
+      const i3 = i * 3;
+      const armIndex = i % ARMS;
+      const armAngle = (armIndex / ARMS) * Math.PI * 2;
+
+      const radius = Math.pow(Math.random(), 1.5) * RADIUS;
+      const spinAngle = radius * SPIN;
+
+      const spreadX = (Math.random() - 0.5) * BRANCH_SPREAD * (radius / RADIUS + 0.2);
+      const spreadY = (Math.random() - 0.5) * BRANCH_SPREAD * 0.4 * (1 - radius / RADIUS);
+      const spreadZ = (Math.random() - 0.5) * BRANCH_SPREAD * (radius / RADIUS + 0.2);
+
+      positions[i3]     = Math.cos(armAngle + spinAngle) * radius + spreadX;
+      positions[i3 + 1] = spreadY;
+      positions[i3 + 2] = Math.sin(armAngle + spinAngle) * radius + spreadZ;
+
+      // Color: blend arm color towards white at edges
+      const armCol = armColors[armIndex];
+      const edgeMix = Math.pow(radius / RADIUS, 1.5);
+      const mixCol = armCol.clone().lerp(colWhite, edgeMix * 0.6);
+
+      colors[i3]     = mixCol.r;
+      colors[i3 + 1] = mixCol.g;
+      colors[i3 + 2] = mixCol.b;
+
+      sizes[i] = (Math.random() * 0.6 + 0.3) * (1 - radius / RADIUS * 0.5);
+      randoms[i] = Math.random() * Math.PI * 2;
+    }
+
+    galaxyGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    galaxyGeo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+    galaxyGeo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+    galaxyGeo.setAttribute('aRandom',  new THREE.BufferAttribute(randoms, 1));
+
+    // --- Custom shader for glow dots ---
+    const galaxyMat = new THREE.ShaderMaterial({
+      vertexShader: `
+        attribute float size;
+        attribute float aRandom;
+        varying vec3 vColor;
+        varying float vAlpha;
+        uniform float uTime;
+        uniform float uPixelRatio;
+        void main() {
+          vColor = color;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          float pulse = sin(uTime * 0.8 + aRandom * 6.28) * 0.3 + 0.7;
+          gl_PointSize = size * uPixelRatio * 28.0 * pulse * (1.0 / -mvPos.z);
+          gl_Position = projectionMatrix * mvPos;
+          vAlpha = pulse * (1.0 / (-mvPos.z * 0.3 + 0.5));
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          float d = length(gl_PointCoord - 0.5);
+          if (d > 0.5) discard;
+          float glow = exp(-d * 6.0);
+          float core = smoothstep(0.15, 0.0, d);
+          vec3 col = vColor * glow + vec3(1.0) * core * 0.5;
+          float alpha = clamp(vAlpha * glow * 1.2, 0.0, 1.0);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+      uniforms: {
+        uTime: { value: 0 },
+        uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) }
+      },
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    const galaxy = new THREE.Points(galaxyGeo, galaxyMat);
+    galaxy.rotation.x = -0.45;
+    scene.add(galaxy);
+
+    // --- Core glow (bright center) ---
+    const coreGeo = new THREE.BufferGeometry();
+    const corePos = new Float32Array(CORE_PARTICLES * 3);
+    const coreCol = new Float32Array(CORE_PARTICLES * 3);
+    const coreSiz = new Float32Array(CORE_PARTICLES);
+    const coreRnd = new Float32Array(CORE_PARTICLES);
+
+    for (let i = 0; i < CORE_PARTICLES; i++) {
+      const i3 = i * 3;
+      const r = Math.pow(Math.random(), 2) * 0.8;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = (Math.random() - 0.5) * Math.PI * 0.6;
+      corePos[i3]     = Math.cos(theta) * Math.cos(phi) * r;
+      corePos[i3 + 1] = Math.sin(phi) * r * 0.3;
+      corePos[i3 + 2] = Math.sin(theta) * Math.cos(phi) * r;
+
+      const cMix = Math.random();
+      const cc = colOrange.clone().lerp(colWhite, cMix * 0.7);
+      coreCol[i3] = cc.r; coreCol[i3+1] = cc.g; coreCol[i3+2] = cc.b;
+      coreSiz[i] = Math.random() * 0.5 + 0.5;
+      coreRnd[i] = Math.random() * Math.PI * 2;
+    }
+
+    coreGeo.setAttribute('position', new THREE.BufferAttribute(corePos, 3));
+    coreGeo.setAttribute('color',    new THREE.BufferAttribute(coreCol, 3));
+    coreGeo.setAttribute('size',     new THREE.BufferAttribute(coreSiz, 1));
+    coreGeo.setAttribute('aRandom',  new THREE.BufferAttribute(coreRnd, 1));
+
+    const coreMat = galaxyMat.clone();
+    coreMat.uniforms = {
+      uTime: galaxyMat.uniforms.uTime,
+      uPixelRatio: galaxyMat.uniforms.uPixelRatio
+    };
+    const core = new THREE.Points(coreGeo, coreMat);
+    core.rotation.x = -0.45;
+    scene.add(core);
+
+    // --- Floating dust (ambient far particles) ---
+    const dustCount = 800;
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPos = new Float32Array(dustCount * 3);
+    const dustCol = new Float32Array(dustCount * 3);
+    const dustSiz = new Float32Array(dustCount);
+    const dustRnd = new Float32Array(dustCount);
+
+    for (let i = 0; i < dustCount; i++) {
+      const i3 = i * 3;
+      dustPos[i3]     = (Math.random() - 0.5) * 20;
+      dustPos[i3 + 1] = (Math.random() - 0.5) * 12;
+      dustPos[i3 + 2] = (Math.random() - 0.5) * 15 - 3;
+      const dc = colWhite.clone().lerp(colCyan, Math.random() * 0.3);
+      dustCol[i3] = dc.r; dustCol[i3+1] = dc.g; dustCol[i3+2] = dc.b;
+      dustSiz[i] = Math.random() * 0.15 + 0.05;
+      dustRnd[i] = Math.random() * Math.PI * 2;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    dustGeo.setAttribute('color',    new THREE.BufferAttribute(dustCol, 3));
+    dustGeo.setAttribute('size',     new THREE.BufferAttribute(dustSiz, 1));
+    dustGeo.setAttribute('aRandom',  new THREE.BufferAttribute(dustRnd, 1));
+
+    const dustMat = galaxyMat.clone();
+    dustMat.uniforms = {
+      uTime: galaxyMat.uniforms.uTime,
+      uPixelRatio: galaxyMat.uniforms.uPixelRatio
+    };
+    const dust = new THREE.Points(dustGeo, dustMat);
+    scene.add(dust);
+
+    // --- Mouse tracking ---
+    window.addEventListener('mousemove', (e) => {
+      mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    // --- Resize ---
+    function resize() {
+      const hero = document.querySelector('.hero');
+      const w = hero.offsetWidth;
+      const h = hero.offsetHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // --- Animate ---
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      galaxyMat.uniforms.uTime.value = t;
+
+      // Smooth mouse follow
+      mouse.x += (mouse.tx - mouse.x) * 0.03;
+      mouse.y += (mouse.ty - mouse.y) * 0.03;
+
+      galaxy.rotation.y = t * 0.04 + mouse.x * 0.15;
+      galaxy.rotation.x = -0.45 + mouse.y * 0.08;
+      core.rotation.y = galaxy.rotation.y;
+      core.rotation.x = galaxy.rotation.x;
+
+      dust.rotation.y = t * 0.008;
+      dust.rotation.x = mouse.y * 0.04;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // --- Fade galaxy on scroll ---
+    window.addEventListener('scroll', () => {
+      const hero = document.querySelector('.hero');
+      const rect = hero.getBoundingClientRect();
+      const progress = Math.max(0, Math.min(1, -rect.top / rect.height));
+      canvas.style.opacity = 1 - progress * 1.5;
+    });
+  })();
+  </script>
+
+</body>
+</html>
