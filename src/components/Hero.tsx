@@ -280,7 +280,7 @@ export default function Hero() {
                     <span className="ido-launch-cta">Get $BLOCK at up to +50% bonus →</span>
                 </Link>
                 <div className="hero-actions">
-                    <Link to="/ido" className="btn-primary btn-ido">$BLOCK IDO — Buy Now</Link>
+                    <Link to="/ido" className="btn-primary btn-ido">$BLOCK IDO — Learn More</Link>
                     <a href="#dapps" className="btn-ghost">Explore the dApps</a>
                 </div>
             </div>
