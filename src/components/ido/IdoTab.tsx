@@ -110,8 +110,11 @@ export default function IdoTab({
     }, [provider, readContract]);
 
     useEffect((): void => {
+        setMotoBalance(0n);
+        setUserPurchases(0n);
         setMotoAllowance(null);
         setAllowanceLoaded(false);
+        setMotoAmount('');
     }, [address]);
 
     const loadUserData = useCallback(async (): Promise<void> => {
