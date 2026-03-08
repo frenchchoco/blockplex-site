@@ -89,6 +89,7 @@ export default function IdoTab({
     const [motoAmount, setMotoAmount] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [approvePending, setApprovePending] = useState<boolean>(false);
+    const [infiniteApproval, setInfiniteApproval] = useState<boolean>(false);
 
     const loadIDOInfo = useCallback(async (): Promise<void> => {
         if (!provider || !CONTRACTS.BLOCK_IDO) return;
@@ -277,7 +278,11 @@ export default function IdoTab({
         try {
             setLoading(true);
             showToast('Approving MOTO spend for IDO...', 'info');
-            const approveAmount: bigint = BitcoinUtils.expandToDecimals(1_000_000, MOTO_DECIMALS);
+            // Infinite: max uint256, Limited: 1M MOTO (enough for many buys)
+            const MAX_UINT256: bigint = (1n << 256n) - 1n;
+            const approveAmount: bigint = infiniteApproval
+                ? MAX_UINT256
+                : BitcoinUtils.expandToDecimals(1_000_000, MOTO_DECIMALS);
             const motoContract: OP20Contract | null = getOP20ContractCached(CONTRACTS.MOTO_TOKEN);
             if (!motoContract) throw new Error('MOTO contract not available');
             const idoAddress = await provider!.getPublicKeyInfo(CONTRACTS.BLOCK_IDO, true);
@@ -506,6 +511,20 @@ export default function IdoTab({
 
                         {isConnected && allowanceLoaded && motoAllowance !== null && motoAllowance < motoRaw ? (
                             <>
+                                <label className="ido-infinite-approval">
+                                    <input
+                                        type="checkbox"
+                                        checked={infiniteApproval}
+                                        onChange={(e) => setInfiniteApproval(e.target.checked)}
+                                        disabled={loading || approvePending}
+                                    />
+                                    <span>Infinite approval</span>
+                                    <span className="ido-infinite-hint">
+                                        {infiniteApproval
+                                            ? 'No re-approval needed — revoke anytime via BlockRevoke'
+                                            : 'Limited to 1M MOTO — may need re-approval for large buys'}
+                                    </span>
+                                </label>
                                 <button
                                     className="ido-primary-btn"
                                     onClick={handleApproveMoto}

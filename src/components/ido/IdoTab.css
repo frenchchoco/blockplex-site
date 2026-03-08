@@ -426,6 +426,51 @@
   background: rgba(0,255,136,0.04);
 }
 
+/* ─── Infinite approval toggle ───────────────────────────────── */
+.ido-infinite-approval {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.ido-infinite-approval:hover {
+  border-color: rgba(247, 147, 26, 0.25);
+}
+
+.ido-infinite-approval input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-orange);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ido-infinite-approval > span:nth-child(2) {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.03em;
+}
+
+.ido-infinite-hint {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.65;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
 /* ─── Primary button ─────────────────────────────────────────── */
 .ido-primary-btn {
   width: 100%;
