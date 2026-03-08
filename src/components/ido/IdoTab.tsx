@@ -281,7 +281,8 @@ export default function IdoTab({
             }, 5000);
         } catch (e) {
             console.error('[IDO Buy] error:', e);
-            showToast('Buy failed: ' + friendlyWalletError(e), 'error');
+            const msg = friendlyWalletError(e);
+            showToast(msg, 'error');
         } finally {
             setLoading(false);
         }

@@ -117,7 +117,10 @@ export const useOpWallet = (): UseOpWalletReturn => {
         try {
             sim = await contract[method](...params);
         } catch (simErr: unknown) {
-            throw new Error('Simulation failed: ' + friendlyWalletError(simErr));
+            const friendly = friendlyWalletError(simErr);
+            const err = new Error(friendly);
+            (err as Error & { isSimulation: boolean }).isSimulation = true;
+            throw err;
         }
 
         const sendParams: SendTransactionParams = {
