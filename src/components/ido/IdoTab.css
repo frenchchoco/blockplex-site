@@ -1,0 +1,557 @@
+/* ─── IDO Tab — BlockPlex theme ──────────────────────────────── */
+
+.ido-tab {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 0 80px;
+}
+
+/* ─── Shared styles ─────────────────────────────────────────── */
+.ido-mono {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ido-mono.ido-orange { color: var(--accent-orange); }
+
+.ido-section-title {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent-violet);
+  margin-bottom: 20px;
+}
+
+.ido-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 28px 24px;
+  margin-bottom: 16px;
+}
+
+/* ─── Hero ───────────────────────────────────────────────────── */
+.ido-hero {
+  text-align: center;
+  padding: 48px 0 36px;
+}
+
+.ido-hero-label {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.ido-hero-phase {
+  font-family: var(--font-display);
+  font-size: clamp(42px, 8vw, 72px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: idoPulse 3s ease-in-out infinite;
+}
+
+@keyframes idoPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+.ido-hero-rate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.ido-rate-value {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.ido-rate-unit {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.ido-bonus-badge {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 4px 14px;
+  border: 1px solid #00ff88;
+  color: #00ff88;
+  background: rgba(0, 255, 136, 0.06);
+  border-radius: 6px;
+}
+
+.ido-sold-out {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+.ido-starting-soon {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  color: var(--accent-orange);
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+
+.ido-coming-soon-card {
+  text-align: center;
+  padding: 32px 20px;
+}
+.ido-coming-soon-card .ido-coming-icon {
+  font-size: 40px;
+  margin-bottom: 14px;
+}
+.ido-coming-soon-card .ido-coming-text {
+  font-size: 1.4rem;
+  margin-bottom: 10px;
+}
+.ido-coming-soon-card .ido-coming-desc {
+  max-width: 400px;
+  margin: 0 auto;
+}
+.ido-coming-soon-card .ido-coming-desc strong {
+  color: var(--accent-orange);
+}
+
+/* ─── Progress ──────────────────────────────────────────────── */
+.ido-progress-section {
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
+.ido-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ido-progress-bar {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ido-progress-fill {
+  height: 100%;
+  background: var(--gradient-hero);
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.ido-progress-fill.ido-orange-fill {
+  background: var(--accent-orange);
+}
+
+.ido-progress-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+/* ─── Stats bar ─────────────────────────────────────────────── */
+.ido-stats-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ido-stat {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+}
+
+.ido-stat-v {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ido-stat-l {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ─── Presets ────────────────────────────────────────────────── */
+.ido-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.ido-preset-btn {
+  flex: 1;
+  min-width: 70px;
+  padding: 10px 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.ido-preset-btn span {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.ido-preset-btn:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+}
+
+.ido-preset-btn.active {
+  border-color: var(--accent-orange);
+  background: rgba(247,147,26,0.08);
+  color: var(--accent-orange);
+}
+
+/* ─── Input ──────────────────────────────────────────────────── */
+.ido-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  margin-bottom: 16px;
+  -moz-appearance: textfield;
+}
+
+.ido-input::-webkit-outer-spin-button,
+.ido-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ido-input:focus {
+  border-color: var(--accent-orange);
+}
+
+.ido-input::placeholder {
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+/* ─── Quote ──────────────────────────────────────────────────── */
+.ido-quote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(247,147,26,0.04);
+  border: 1px solid rgba(247,147,26,0.1);
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.ido-quote-val {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent-orange);
+  margin-top: 4px;
+}
+
+.ido-bonus-tag {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  border: 1px solid #00ff88;
+  color: #00ff88;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* ─── Balance row ────────────────────────────────────────────── */
+.ido-balance-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.02);
+  border-left: 2px solid var(--accent-orange);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 16px;
+}
+
+/* ─── Warning ────────────────────────────────────────────────── */
+.ido-warning {
+  text-align: center;
+  padding: 10px;
+  color: var(--accent-pink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+/* ─── Notices ────────────────────────────────────────────────── */
+.ido-freeze-notice,
+.ido-ended-notice {
+  text-align: center;
+  padding: 24px 20px;
+  border: 1px solid;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+.ido-freeze-notice {
+  border-color: var(--accent-pink);
+  color: var(--accent-pink);
+  background: rgba(255,60,142,0.04);
+}
+
+.ido-ended-notice {
+  border-color: #00ff88;
+  color: #00ff88;
+  background: rgba(0,255,136,0.04);
+}
+
+/* ─── Primary button ─────────────────────────────────────────── */
+.ido-primary-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.3s;
+  box-shadow: 0 4px 30px rgba(247,147,26,0.25);
+}
+
+.ido-primary-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px rgba(247,147,26,0.35);
+}
+
+.ido-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Coming soon ────────────────────────────────────────────── */
+.ido-coming-soon {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.ido-coming-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.ido-coming-text {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.ido-coming-desc {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ─── User card ──────────────────────────────────────────────── */
+.ido-user-card {
+  text-align: center;
+}
+
+.ido-user-total {
+  padding: 24px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+}
+
+.ido-user-val {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ido-user-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  margin-top: 4px;
+}
+
+/* ─── Phase rows ─────────────────────────────────────────────── */
+.ido-phase-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-card);
+  background: rgba(255,255,255,0.02);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  transition: all 0.2s;
+  opacity: 0.5;
+}
+
+.ido-phase-row.active {
+  opacity: 1;
+  border-color: var(--accent-orange);
+  background: rgba(247,147,26,0.04);
+}
+
+.ido-phase-row.completed {
+  opacity: 0.35;
+}
+
+.ido-phase-num {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--accent-orange);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.ido-phase-row.active .ido-phase-num {
+  border-color: var(--accent-orange);
+  background: rgba(247,147,26,0.1);
+}
+
+.ido-phase-row.completed .ido-phase-num {
+  color: #00ff88;
+  border-color: rgba(0,255,136,0.3);
+}
+
+.ido-phase-info {
+  flex: 1;
+}
+
+.ido-phase-name {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.ido-phase-bonus {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #00ff88;
+  letter-spacing: 0.02em;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────── */
+.ido-toast {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: fadeUp 0.3s ease-out;
+  backdrop-filter: blur(12px);
+}
+
+.ido-toast.info { background: rgba(155,91,255,0.15); border: 1px solid rgba(155,91,255,0.3); color: var(--accent-violet); }
+.ido-toast.success { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: #00ff88; }
+.ido-toast.error { background: rgba(255,60,142,0.1); border: 1px solid rgba(255,60,142,0.3); color: var(--accent-pink); }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .ido-hero-phase { font-size: 48px; }
+  .ido-hero-rate { flex-direction: column; gap: 6px; }
+  .ido-stats-bar { flex-direction: column; }
+  .ido-phase-row { flex-wrap: wrap; }
+  .ido-presets { gap: 6px; }
+  .ido-preset-btn { min-width: 55px; padding: 8px 6px; font-size: 0.85rem; }
+}

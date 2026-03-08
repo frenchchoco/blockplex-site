@@ -1,0 +1,35 @@
+{
+  "name": "blockplex-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@btc-vision/as-loader": "^0.0.0",
+    "@btc-vision/assemblyscript": "^0.29.3",
+    "@btc-vision/bitcoin": "^7.0.0-rc.5",
+    "@btc-vision/transaction": "^1.8.0-rc.7",
+    "@btc-vision/walletconnect": "^1.10.0-rc.0",
+    "opnet": "^1.8.1-rc.9",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^5.1.4",
+    "patch-package": "^8.0.1",
+    "three": "^0.128.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-node-polyfills": "^0.25.0"
+  }
+}
