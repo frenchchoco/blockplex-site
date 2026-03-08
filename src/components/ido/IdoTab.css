@@ -171,6 +171,16 @@
   background: var(--accent-orange);
 }
 
+.ido-progress-fill.ido-red-fill {
+  background: var(--accent-pink);
+}
+
+.ido-cap-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-card);
+}
+
 .ido-progress-stats {
   display: flex;
   justify-content: space-between;

@@ -5,6 +5,7 @@ import {
     MOTO_DECIMALS,
     formatBlock,
     formatMoto,
+    BLOCK_UNITS,
 } from '../../config/contracts';
 import type {
     Address,
@@ -169,6 +170,11 @@ export default function IdoTab({
     const idoEnded: boolean = phase === 0 && totalSold > 0n;
     const idoNotStarted: boolean = phase === 0 && totalSold === 0n;
     const idoNotDeployed: boolean = !CONTRACTS.BLOCK_IDO;
+
+    const MAX_PER_USER: bigint = 105_000n * BLOCK_UNITS; // 105,000 BLOCK (10% of total)
+    const userRemaining: bigint = MAX_PER_USER > userPurchases ? MAX_PER_USER - userPurchases : 0n;
+    const userCapPct: number = Number(userPurchases * 10000n / MAX_PER_USER) / 100;
+    const nearCap: boolean = userPurchases > 0n && userRemaining < estimatedBlock && estimatedBlock > 0n;
 
     const pollAllowanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -423,6 +429,14 @@ export default function IdoTab({
                             <div className="ido-warning">Not enough MOTO</div>
                         )}
 
+                        {nearCap && isConnected && (
+                            <div className="ido-warning">Exceeds your wallet cap — max {formatBlock(userRemaining)} BLOCK remaining</div>
+                        )}
+
+                        {userRemaining === 0n && isConnected && userPurchases > 0n && (
+                            <div className="ido-warning">Wallet cap reached (105,000 BLOCK)</div>
+                        )}
+
                         {isConnected && allowanceLoaded && motoAllowance !== null && motoAllowance < motoRaw ? (
                             <>
                                 <button
@@ -451,13 +465,34 @@ export default function IdoTab({
                 )}
             </div>
 
-            {/* User purchases */}
+            {/* User purchases + wallet cap */}
             {isConnected && userPurchases > 0n && (
                 <div className="ido-card ido-user-card">
                     <div className="ido-section-title">YOUR PURCHASES</div>
                     <div className="ido-user-total">
                         <div className="ido-user-val">{formatBlock(userPurchases)}</div>
                         <div className="ido-user-label">$BLOCK PURCHASED</div>
+                    </div>
+                    <div className="ido-cap-section">
+                        <div className="ido-progress-header">
+                            <span className="ido-mono">WALLET CAP</span>
+                            <span className="ido-mono ido-orange">{userCapPct.toFixed(1)}%</span>
+                        </div>
+                        <div className="ido-progress-bar">
+                            <div
+                                className={`ido-progress-fill ${userCapPct >= 90 ? 'ido-red-fill' : 'ido-orange-fill'}`}
+                                style={{ width: Math.min(userCapPct, 100) + '%' }}
+                            />
+                        </div>
+                        <div className="ido-progress-stats">
+                            <span className="ido-mono">{formatBlock(userPurchases)} USED</span>
+                            <span className="ido-mono">{formatBlock(MAX_PER_USER)} MAX</span>
+                        </div>
+                        {userRemaining > 0n && (
+                            <div className="ido-mono" style={{ marginTop: 8, fontSize: '0.78rem', opacity: 0.6, textAlign: 'center' }}>
+                                {formatBlock(userRemaining)} BLOCK remaining
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
