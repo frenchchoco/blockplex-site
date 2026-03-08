@@ -75,16 +75,27 @@ export default function IdoPage() {
                 </div>
             </div>
 
-            <div className="ido-mainnet-notice">
-                <div className="ido-mainnet-icon">🚀</div>
-                <div className="ido-mainnet-body">
-                    <div className="ido-mainnet-title">Mainnet IDO launches March 17, 2026</div>
-                    <div className="ido-mainnet-desc">
-                        The $BLOCK Initial DEX Offering goes live on Bitcoin mainnet. Early buyers get up to <strong>+50% bonus</strong> in Phase 1.
-                        Currently previewing on testnet.
+            {NETWORK_NAME === 'mainnet' ? (
+                <div className="ido-mainnet-notice">
+                    <div className="ido-mainnet-icon">🚀</div>
+                    <div className="ido-mainnet-body">
+                        <div className="ido-mainnet-title">Mainnet IDO launches March 17, 2026</div>
+                        <div className="ido-mainnet-desc">
+                            The $BLOCK Initial DEX Offering goes live on Bitcoin mainnet. Early buyers get up to <strong>+50% bonus</strong> in Phase 1.
+                        </div>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="ido-mainnet-notice" style={{ borderColor: 'rgba(155,91,255,0.3)', background: 'rgba(155,91,255,0.06)' }}>
+                    <div className="ido-mainnet-icon">🧪</div>
+                    <div className="ido-mainnet-body">
+                        <div className="ido-mainnet-title">Testnet Preview</div>
+                        <div className="ido-mainnet-desc">
+                            You are on testnet. Buy $BLOCK with testnet MOTO to try the IDO flow. Mainnet launches <strong>March 17, 2026</strong>.
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <IdoTab
                 key={walletAddress ?? 'no-wallet'}

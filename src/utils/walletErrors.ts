@@ -19,6 +19,14 @@ const WALLET_ERROR_MAP: [test: RegExp, friendly: string][] = [
         /timeout|timed? ?out/i,
         'Wallet request timed out. Please try again.',
     ],
+    [
+        /read beyond buffer length|buffer is only \d+ bytes/i,
+        'Contract call reverted — the IDO may not be active yet or the transaction is invalid.',
+    ],
+    [
+        /signer is not allowed/i,
+        'Wallet extension rejected the request. Please update your wallet extension.',
+    ],
 ];
 
 export function friendlyWalletError(error: unknown): string {

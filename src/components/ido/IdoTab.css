@@ -175,6 +175,53 @@
   background: var(--accent-pink);
 }
 
+/* ─── Phased progress bar ────────────────────────────────────── */
+.ido-progress-bar.ido-progress-phased {
+  position: relative;
+  overflow: visible;
+  height: 8px;
+}
+
+.ido-phase-marker {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 1px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ido-phase-labels {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+}
+
+.ido-phase-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  opacity: 0.5;
+  text-align: center;
+  flex: 1;
+  transition: all 0.2s;
+}
+
+.ido-phase-label.active {
+  color: var(--accent-orange);
+  opacity: 1;
+  font-weight: 700;
+}
+
+.ido-phase-label.done {
+  color: #00ff88;
+  opacity: 0.65;
+}
+
 .ido-cap-section {
   margin-top: 20px;
   padding-top: 16px;

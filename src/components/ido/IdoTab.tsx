@@ -6,6 +6,7 @@ import {
     formatBlock,
     formatMoto,
     BLOCK_UNITS,
+    NETWORK_NAME,
 } from '../../config/contracts';
 import type {
     Address,
@@ -167,8 +168,10 @@ export default function IdoTab({
     const overallProgress: number = totalCap > 0n ? Number(totalSold * 10000n / totalCap) / 100 : 0;
     const phaseProgress: number = phaseCap > 0n ? Number(phaseSold * 10000n / phaseCap) / 100 : 0;
 
+    const isMainnet: boolean = NETWORK_NAME === 'mainnet';
     const idoEnded: boolean = phase === 0 && totalSold > 0n;
-    const idoNotStarted: boolean = phase === 0 && totalSold === 0n;
+    const idoNotStarted: boolean = isMainnet && phase === 0 && totalSold === 0n;
+    const testnetPreview: boolean = !isMainnet && phase === 0 && totalSold === 0n;
     const idoNotDeployed: boolean = !CONTRACTS.BLOCK_IDO;
 
     const MAX_PER_USER: bigint = 105_000n * BLOCK_UNITS; // 105,000 BLOCK (10% of total)
@@ -252,8 +255,12 @@ export default function IdoTab({
 
     const handleBuy = async (): Promise<void> => {
         if (!isConnected) { showToast('Connect your wallet first', 'error'); return; }
+        if (idoNotStarted) { showToast('IDO is not active yet', 'error'); return; }
+        if (testnetPreview) { showToast('IDO contract is in preview — phase not active on-chain yet', 'info'); return; }
+        if (paused) { showToast('IDO is currently paused', 'error'); return; }
         if (motoRaw <= 0n) { showToast('Enter a MOTO amount', 'error'); return; }
         if (motoBalance < motoRaw) { showToast('Not enough MOTO', 'error'); return; }
+        if (userRemaining === 0n && userPurchases > 0n) { showToast('Wallet cap reached (105,000 BLOCK)', 'error'); return; }
 
         try {
             setLoading(true);
@@ -301,7 +308,7 @@ export default function IdoTab({
             <div className="ido-hero">
                 <div className="ido-hero-label">$BLOCK INITIAL OFFERING</div>
                 <div className="ido-hero-phase">
-                    {idoNotStarted ? 'STARTING SOON' : phaseInfo.name}
+                    {idoNotStarted ? 'STARTING SOON' : testnetPreview ? 'PHASE 1' : phaseInfo.name}
                 </div>
                 <div className="ido-hero-rate">
                     {phase > 0 ? (
@@ -312,8 +319,10 @@ export default function IdoTab({
                         </>
                     ) : idoNotStarted ? (
                         <span className="ido-starting-soon">Mainnet launch — March 17, 2026</span>
-                    ) : (
+                    ) : idoEnded ? (
                         <span className="ido-sold-out">IDO COMPLETED</span>
+                    ) : (
+                        <span className="ido-starting-soon">Testnet — Phase 1 rate: 15 BLOCK / MOTO</span>
                     )}
                 </div>
             </div>
@@ -324,8 +333,15 @@ export default function IdoTab({
                     <span className="ido-mono">OVERALL PROGRESS</span>
                     <span className="ido-mono ido-orange">{overallProgress.toFixed(1)}%</span>
                 </div>
-                <div className="ido-progress-bar">
+                <div className="ido-progress-bar ido-progress-phased">
                     <div className="ido-progress-fill" style={{ width: Math.min(overallProgress, 100) + '%' }} />
+                    <div className="ido-phase-marker" style={{ left: '33.33%' }} />
+                    <div className="ido-phase-marker" style={{ left: '66.66%' }} />
+                </div>
+                <div className="ido-phase-labels">
+                    <span className={`ido-phase-label ${phase === 1 || (testnetPreview) ? 'active' : phase > 1 || idoEnded ? 'done' : ''}`}>P1 · 350K</span>
+                    <span className={`ido-phase-label ${phase === 2 ? 'active' : phase > 2 || idoEnded ? 'done' : ''}`}>P2 · 350K</span>
+                    <span className={`ido-phase-label ${phase === 3 ? 'active' : idoEnded ? 'done' : ''}`}>P3 · 350K</span>
                 </div>
                 <div className="ido-progress-stats">
                     <span className="ido-mono">{formatBlock(totalSold)} SOLD</span>
@@ -360,7 +376,7 @@ export default function IdoTab({
                     <div className="ido-stat-l">BLOCK SOLD</div>
                 </div>
                 <div className="ido-stat">
-                    <div className="ido-stat-v">{phase > 0 ? phase : '\u2014'}</div>
+                    <div className="ido-stat-v">{phase > 0 ? phase : testnetPreview ? 1 : '\u2014'}</div>
                     <div className="ido-stat-l">CURRENT PHASE</div>
                 </div>
             </div>
@@ -456,7 +472,7 @@ export default function IdoTab({
                             <button
                                 className="ido-primary-btn"
                                 onClick={handleBuy}
-                                disabled={loading || !isConnected || motoRaw <= 0n}
+                                disabled={loading || !isConnected || motoRaw <= 0n || idoNotStarted || testnetPreview}
                             >
                                 {loading ? 'PROCESSING...' : !isConnected ? 'CONNECT WALLET' : 'BUY $BLOCK'}
                             </button>
@@ -500,10 +516,13 @@ export default function IdoTab({
             {/* Phase breakdown */}
             <div className="ido-card">
                 <div className="ido-section-title">IDO PHASES</div>
-                {PHASE_BREAKDOWN.map((p: PhaseBreakdown) => (
-                    <div className={`ido-phase-row ${phase === p.phase ? 'active' : ''} ${phase > p.phase || phase === 0 ? 'completed' : ''}`} key={p.phase}>
+                {PHASE_BREAKDOWN.map((p: PhaseBreakdown) => {
+                    const isCompleted = phase > p.phase || (idoEnded && p.phase <= 3);
+                    const isActive = phase === p.phase || (testnetPreview && p.phase === 1);
+                    return (
+                    <div className={`ido-phase-row ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`} key={p.phase}>
                         <div className="ido-phase-num">
-                            {phase > p.phase || (phase === 0) ? '\u2713' : p.phase}
+                            {isCompleted ? '\u2713' : p.phase}
                         </div>
                         <div className="ido-phase-info">
                             <div className="ido-phase-name">PHASE {p.phase}</div>
@@ -511,7 +530,8 @@ export default function IdoTab({
                         </div>
                         <div className="ido-phase-bonus">{p.bonus}</div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
