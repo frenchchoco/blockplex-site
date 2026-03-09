@@ -684,6 +684,12 @@
   color: #00ff88;
   letter-spacing: 0.02em;
 }
+.ido-phase-bonus.ido-base-rate {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
 
 /* ─── Toast ──────────────────────────────────────────────────── */
 .ido-toast {

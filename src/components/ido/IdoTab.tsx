@@ -6,7 +6,6 @@ import {
     formatBlock,
     formatMoto,
     BLOCK_UNITS,
-    NETWORK_NAME,
 } from '../../config/contracts';
 import type {
     Address,
@@ -30,6 +29,7 @@ interface IdoTabProps {
     getOP20Balance: UseOpWalletReturn['getOP20Balance'];
     getOP20ContractCached: UseOpWalletReturn['getOP20ContractCached'];
     onBalanceRefresh: () => void;
+    effectiveNetwork: string;
 }
 
 interface PhaseLabel {
@@ -39,9 +39,9 @@ interface PhaseLabel {
 }
 
 const PHASE_LABELS: Record<number, PhaseLabel> = {
-    1: { name: 'PHASE 1', bonus: '+50%', rate: '15 BLOCK / MOTO' },
-    2: { name: 'PHASE 2', bonus: '+25%', rate: '12.5 BLOCK / MOTO' },
-    3: { name: 'PHASE 3', bonus: '+10%', rate: '11 BLOCK / MOTO' },
+    1: { name: 'PHASE 1', bonus: '+50%', rate: '75 BLOCK / MOTO' },
+    2: { name: 'PHASE 2', bonus: 'BASE', rate: '50 BLOCK / MOTO' },
+    3: { name: 'PHASE 3', bonus: 'BASE', rate: '50 BLOCK / MOTO' },
     0: { name: 'SOLD OUT', bonus: '\u2014', rate: '\u2014' },
 };
 
@@ -55,9 +55,9 @@ interface PhaseBreakdown {
 }
 
 const PHASE_BREAKDOWN: PhaseBreakdown[] = [
-    { phase: 1, bonus: '+50%', rate: '15', cap: '350,000' },
-    { phase: 2, bonus: '+25%', rate: '12.5', cap: '350,000' },
-    { phase: 3, bonus: '+10%', rate: '11', cap: '350,000' },
+    { phase: 1, bonus: '+50%', rate: '75', cap: '6,670,000' },
+    { phase: 2, bonus: 'BASE', rate: '50', cap: '6,670,000' },
+    { phase: 3, bonus: 'BASE', rate: '50', cap: '6,670,000' },
 ];
 
 export default function IdoTab({
@@ -71,6 +71,7 @@ export default function IdoTab({
     getOP20Balance,
     getOP20ContractCached,
     onBalanceRefresh,
+    effectiveNetwork,
 }: IdoTabProps) {
     const [phase, setPhase] = useState<number>(0);
     const [totalSold, setTotalSold] = useState<bigint>(0n);
@@ -78,8 +79,10 @@ export default function IdoTab({
     const [phaseCap, setPhaseCap] = useState<bigint>(0n);
     const [bonusBps, setBonusBps] = useState<bigint>(0n);
     const [totalMotoRaised, setTotalMotoRaised] = useState<bigint>(0n);
-    const [blockPerMoto, setBlockPerMoto] = useState<bigint>(10n);
+    const [blockPerMoto, setBlockPerMoto] = useState<bigint>(50n);
     const [paused, setPaused] = useState<boolean>(false);
+    const [whitelistEnabled, setWhitelistEnabled] = useState<boolean>(false);
+    const [userWhitelisted, setUserWhitelisted] = useState<boolean>(false);
 
     const [motoBalance, setMotoBalance] = useState<bigint>(0n);
     const [userPurchases, setUserPurchases] = useState<bigint>(0n);
@@ -104,8 +107,9 @@ export default function IdoTab({
                 setPhaseCap(BigInt(info.phaseCap as bigint ?? 0));
                 setBonusBps(BigInt(info.bonusBps as bigint ?? 0));
                 setTotalMotoRaised(BigInt(info.totalMotoRaised as bigint ?? 0));
-                setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 10));
+                setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 50));
                 setPaused(!!info.paused);
+                setWhitelistEnabled(!!info.whitelistEnabled);
             }
         } catch (e) {
             console.error('loadIDOInfo:', e);
@@ -131,6 +135,14 @@ export default function IdoTab({
             const purchases = await readContract(CONTRACTS.BLOCK_IDO, BLOCK_IDO_ABI, 'getUserPurchases', [address]);
             if (purchases) {
                 setUserPurchases(BigInt(purchases.totalBlock as bigint ?? 0));
+            }
+
+            // Check whitelist status
+            try {
+                const wlResult = await readContract(CONTRACTS.BLOCK_IDO, BLOCK_IDO_ABI, 'isWhitelisted', [address]);
+                if (wlResult) setUserWhitelisted(!!wlResult.whitelisted);
+            } catch {
+                // Contract may not support whitelist yet — ignore
             }
 
             try {
@@ -172,7 +184,7 @@ export default function IdoTab({
         ? (motoRaw * blockPerMoto * (10000n + bonusBps)) / (10000n * DECIMAL_DIFF)
         : 0n;
 
-    const totalCap: bigint = phaseCap > 0n ? phaseCap * 3n : 105_000_000_000_000n;
+    const totalCap: bigint = phaseCap > 0n ? phaseCap * 3n : 2_001_000_000_000_000n;
     const overallProgress: number = totalCap > 0n ? Number(totalSold * 10000n / totalCap) / 100 : 0;
     const phaseProgress: number = phaseCap > 0n ? Number(phaseSold * 10000n / phaseCap) / 100 : 0;
     // Pending purchase progress (pulsing segment on bars)
@@ -181,13 +193,14 @@ export default function IdoTab({
     const pendingPhasePct: number = buyPending && pendingBlockEstimate > 0n && phaseCap > 0n
         ? Number(pendingBlockEstimate * 10000n / phaseCap) / 100 : 0;
 
-    const isMainnet: boolean = NETWORK_NAME === 'mainnet';
+    const isMainnet: boolean = effectiveNetwork === 'mainnet';
     const idoEnded: boolean = phase === 0 && totalSold > 0n;
     const idoNotStarted: boolean = isMainnet && phase === 0 && totalSold === 0n;
     const testnetPreview: boolean = !isMainnet && phase === 0 && totalSold === 0n;
     const idoNotDeployed: boolean = !CONTRACTS.BLOCK_IDO;
+    const whitelistBlocked: boolean = whitelistEnabled && !userWhitelisted && isConnected;
 
-    const MAX_PER_USER: bigint = 105_000n * BLOCK_UNITS; // 105,000 BLOCK (10% of total)
+    const MAX_PER_USER: bigint = 200_000n * BLOCK_UNITS; // 200,000 BLOCK (1% of IDO allocation)
     const userRemaining: bigint = MAX_PER_USER > userPurchases ? MAX_PER_USER - userPurchases : 0n;
     const userCapPct: number = Number(userPurchases * 10000n / MAX_PER_USER) / 100;
     const nearCap: boolean = userPurchases > 0n && userRemaining < estimatedBlock && estimatedBlock > 0n;
@@ -262,8 +275,9 @@ export default function IdoTab({
                     setPhaseCap(BigInt(info.phaseCap as bigint ?? 0));
                     setBonusBps(BigInt(info.bonusBps as bigint ?? 0));
                     setTotalMotoRaised(BigInt(info.totalMotoRaised as bigint ?? 0));
-                    setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 10));
+                    setBlockPerMoto(BigInt(info.blockPerMoto as bigint ?? 50));
                     setPaused(!!info.paused);
+                    setWhitelistEnabled(!!info.whitelistEnabled);
                     setUserPurchases(newUserPurchases);
                     setBuyPending(false);
                     setPendingBlockEstimate(0n);
@@ -330,9 +344,10 @@ export default function IdoTab({
         if (idoNotStarted) { showToast('IDO is not active yet', 'error'); return; }
         if (testnetPreview) { showToast('IDO contract is in preview — phase not active on-chain yet', 'info'); return; }
         if (paused) { showToast('IDO is currently paused', 'error'); return; }
+        if (whitelistBlocked) { showToast('Your wallet is not whitelisted', 'error'); return; }
         if (motoRaw <= 0n) { showToast('Enter a MOTO amount', 'error'); return; }
         if (motoBalance < motoRaw) { showToast('Not enough MOTO', 'error'); return; }
-        if (userRemaining === 0n && userPurchases > 0n) { showToast('Wallet cap reached (105,000 BLOCK)', 'error'); return; }
+        if (userRemaining === 0n && userPurchases > 0n) { showToast('Wallet cap reached (200,000 BLOCK)', 'error'); return; }
 
         try {
             setLoading(true);
@@ -388,14 +403,16 @@ export default function IdoTab({
                         <>
                             <span className="ido-rate-value">1 MOTO = {phaseInfo.rate.split(' ')[0]}</span>
                             <span className="ido-rate-unit">$BLOCK</span>
-                            <span className="ido-bonus-badge">{phaseInfo.bonus} BONUS</span>
+                            {phaseInfo.bonus !== 'BASE' && (
+                                <span className="ido-bonus-badge">{phaseInfo.bonus} BONUS</span>
+                            )}
                         </>
                     ) : idoNotStarted ? (
                         <span className="ido-starting-soon">Mainnet launch — March 17, 2026</span>
                     ) : idoEnded ? (
                         <span className="ido-sold-out">IDO COMPLETED</span>
                     ) : (
-                        <span className="ido-starting-soon">Testnet — Phase 1 rate: 15 BLOCK / MOTO</span>
+                        <span className="ido-starting-soon">Testnet — Phase 1 rate: 75 BLOCK / MOTO (+50% bonus)</span>
                     )}
                 </div>
             </div>
@@ -421,9 +438,9 @@ export default function IdoTab({
                     <div className="ido-phase-marker" style={{ left: '66.66%' }} />
                 </div>
                 <div className="ido-phase-labels">
-                    <span className={`ido-phase-label ${phase === 1 || (testnetPreview) ? 'active' : phase > 1 || idoEnded ? 'done' : ''}`}>P1 · 350K</span>
-                    <span className={`ido-phase-label ${phase === 2 ? 'active' : phase > 2 || idoEnded ? 'done' : ''}`}>P2 · 350K</span>
-                    <span className={`ido-phase-label ${phase === 3 ? 'active' : idoEnded ? 'done' : ''}`}>P3 · 350K</span>
+                    <span className={`ido-phase-label ${phase === 1 || (testnetPreview) ? 'active' : phase > 1 || idoEnded ? 'done' : ''}`}>P1 · 6.67M</span>
+                    <span className={`ido-phase-label ${phase === 2 ? 'active' : phase > 2 || idoEnded ? 'done' : ''}`}>P2 · 6.67M</span>
+                    <span className={`ido-phase-label ${phase === 3 ? 'active' : idoEnded ? 'done' : ''}`}>P3 · 6.67M</span>
                 </div>
                 <div className="ido-progress-stats">
                     <span className="ido-mono">{formatBlock(totalSold)} SOLD</span>
@@ -483,13 +500,13 @@ export default function IdoTab({
                         <div className="ido-coming-icon">🚀</div>
                         <div className="ido-coming-text">IDO LAUNCHING MARCH 17</div>
                         <div className="ido-coming-desc">
-                            Phase 1 gives you <strong>15 BLOCK per MOTO</strong> — that's a <strong>+50% bonus</strong> included.
+                            Phase 1 gives you <strong>75 BLOCK per MOTO</strong> — that's a <strong>+50% bonus</strong> over the base rate of 50 BLOCK/MOTO.
                             Connect your wallet and get ready.
                         </div>
                     </div>
                 ) : idoEnded ? (
                     <div className="ido-ended-notice">
-                        IDO has ended — all 1,050,000 $BLOCK have been sold!
+                        IDO has ended — all 20,010,000 $BLOCK have been sold!
                     </div>
                 ) : (
                     <>
@@ -521,7 +538,11 @@ export default function IdoTab({
                                     <div className="ido-mono">YOU RECEIVE (ESTIMATED)</div>
                                     <div className="ido-quote-val">{formatBlock(estimatedBlock)} $BLOCK</div>
                                 </div>
-                                <div className="ido-bonus-tag">{phaseInfo.bonus} BONUS</div>
+                                {phaseInfo.bonus !== 'BASE' ? (
+                                    <div className="ido-bonus-tag">{phaseInfo.bonus} BONUS</div>
+                                ) : (
+                                    <div className="ido-bonus-tag" style={{ opacity: 0.5 }}>BASE RATE</div>
+                                )}
                             </div>
                         )}
 
@@ -529,6 +550,12 @@ export default function IdoTab({
                             <div className="ido-balance-row">
                                 <span className="ido-mono">YOUR MOTO BALANCE</span>
                                 <span className="ido-mono ido-orange">{formatMoto(motoBalance)} MOTO</span>
+                            </div>
+                        )}
+
+                        {whitelistBlocked && (
+                            <div className="ido-warning" style={{ background: 'rgba(255,150,50,0.08)', borderColor: 'rgba(255,150,50,0.3)', color: 'var(--text-primary)' }}>
+                                🔒 Whitelist is active — your wallet is not yet whitelisted. Complete X verification to participate.
                             </div>
                         )}
 
@@ -541,7 +568,7 @@ export default function IdoTab({
                         )}
 
                         {userRemaining === 0n && isConnected && userPurchases > 0n && (
-                            <div className="ido-warning">Wallet cap reached (105,000 BLOCK)</div>
+                            <div className="ido-warning">Wallet cap reached (200,000 BLOCK)</div>
                         )}
 
                         {isConnected && allowanceLoaded && motoAllowance !== null && motoAllowance < motoRaw ? (
@@ -578,7 +605,7 @@ export default function IdoTab({
                                 <button
                                     className="ido-primary-btn"
                                     onClick={handleBuy}
-                                    disabled={loading || buyPending || !isConnected || motoRaw <= 0n || idoNotStarted || testnetPreview}
+                                    disabled={loading || buyPending || !isConnected || motoRaw <= 0n || idoNotStarted || testnetPreview || whitelistBlocked}
                                 >
                                     {loading ? 'PROCESSING...' : buyPending ? 'WAITING FOR BLOCK...' : !isConnected ? 'CONNECT WALLET' : 'BUY $BLOCK'}
                                 </button>
@@ -647,7 +674,7 @@ export default function IdoTab({
                             <div className="ido-phase-name">PHASE {p.phase}</div>
                             <div className="ido-mono">{p.cap} $BLOCK · 1 MOTO = {p.rate} BLOCK</div>
                         </div>
-                        <div className="ido-phase-bonus">{p.bonus}</div>
+                        <div className={`ido-phase-bonus ${p.bonus === 'BASE' ? 'ido-base-rate' : ''}`}>{p.bonus}</div>
                     </div>
                     );
                 })}

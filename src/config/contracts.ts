@@ -16,8 +16,8 @@ interface ContractAddresses {
 }
 
 const TESTNET_CONTRACTS: ContractAddresses = {
-    BLOCK_TOKEN: '0x62b1338225dfce319f56600d8de6ce34e3e141c970a91f39f7ce2d5cd6d23076',
-    BLOCK_IDO: '0x2fb26ba86986d93470c5ad26ffef4f9c3a4b0f26fd031747351174b95a1a8597',
+    BLOCK_TOKEN: '0x8446a68241647a7867ad3ed5d2220590f24fb0767335f5044f4ac1a87aaf0c6a',
+    BLOCK_IDO: '0x2e4a08481bc393f8d0ededbea8c94d90332412c123b909cc45a4aee1242d9cee',
     MOTO_TOKEN: '0xfd4473840751d58d9f8b73bdd57d6c5260453d5518bd7cd02d0a4cf3df9bf4dd',
 };
 
@@ -64,6 +64,7 @@ export const BLOCK_IDO_ABI: BitcoinInterfaceAbi = [
             { name: 'totalMotoRaised', type: ABIDataTypes.UINT256 },
             { name: 'blockPerMoto', type: ABIDataTypes.UINT256 },
             { name: 'paused', type: ABIDataTypes.BOOL },
+            { name: 'whitelistEnabled', type: ABIDataTypes.BOOL },
         ],
     },
     {
@@ -95,6 +96,28 @@ export const BLOCK_IDO_ABI: BitcoinInterfaceAbi = [
         name: 'setPaused',
         type: BitcoinAbiTypes.Function,
         inputs: [{ name: 'paused', type: ABIDataTypes.BOOL }],
+        outputs: [{ name: 'success', type: ABIDataTypes.BOOL }],
+    },
+    {
+        name: 'isWhitelisted',
+        type: BitcoinAbiTypes.Function,
+        constant: true,
+        inputs: [{ name: 'user', type: ABIDataTypes.ADDRESS }],
+        outputs: [{ name: 'whitelisted', type: ABIDataTypes.BOOL }],
+    },
+    {
+        name: 'setWhitelistEnabled',
+        type: BitcoinAbiTypes.Function,
+        inputs: [{ name: 'enabled', type: ABIDataTypes.BOOL }],
+        outputs: [{ name: 'success', type: ABIDataTypes.BOOL }],
+    },
+    {
+        name: 'setWhitelist',
+        type: BitcoinAbiTypes.Function,
+        inputs: [
+            { name: 'user', type: ABIDataTypes.ADDRESS },
+            { name: 'allowed', type: ABIDataTypes.BOOL },
+        ],
         outputs: [{ name: 'success', type: ABIDataTypes.BOOL }],
     },
 ];

@@ -19,7 +19,12 @@ export default function IdoPage() {
         connect, disconnect, getOP20Balance,
         callContract, readContract,
         provider, getOP20ContractCached,
+        network: walletNetwork,
     } = useOpWallet();
+
+    // Effective network: use wallet's live network when connected, fall back to build-time config
+    const effectiveNetwork: string = (isConnected && walletNetwork) ? walletNetwork : NETWORK_NAME;
+    const networkMismatch: boolean = isConnected && !!walletNetwork && walletNetwork !== NETWORK_NAME;
 
     const [toast, setToast] = useState<ToastState | null>(null);
 
@@ -41,7 +46,7 @@ export default function IdoPage() {
                     <h2 className="section-title" style={{ marginBottom: 0 }}>$BLOCK IDO</h2>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    {NETWORK_NAME === 'testnet' && (
+                    {effectiveNetwork !== 'mainnet' && (
                         <span style={{
                             fontSize: '0.65rem',
                             fontWeight: 600,
@@ -52,7 +57,7 @@ export default function IdoPage() {
                             padding: '4px 10px',
                             borderRadius: '4px',
                             border: '1px solid rgba(155,91,255,0.2)',
-                        }}>TESTNET</span>
+                        }}>{(effectiveNetwork || 'TESTNET').toUpperCase()}</span>
                     )}
                     {isConnected && (
                         <span style={{
@@ -75,7 +80,19 @@ export default function IdoPage() {
                 </div>
             </div>
 
-            {NETWORK_NAME === 'mainnet' ? (
+            {networkMismatch && (
+                <div className="ido-mainnet-notice" style={{ borderColor: 'rgba(255,150,50,0.4)', background: 'rgba(255,150,50,0.08)' }}>
+                    <div className="ido-mainnet-icon">⚠️</div>
+                    <div className="ido-mainnet-body">
+                        <div className="ido-mainnet-title">Network Mismatch</div>
+                        <div className="ido-mainnet-desc">
+                            Your wallet is on <strong>{walletNetwork}</strong> but this site is configured for <strong>{NETWORK_NAME}</strong>. Switch your wallet to <strong>{NETWORK_NAME}</strong> for transactions to work.
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {effectiveNetwork === 'mainnet' ? (
                 <div className="ido-mainnet-notice">
                     <div className="ido-mainnet-icon">🚀</div>
                     <div className="ido-mainnet-body">
@@ -109,6 +126,7 @@ export default function IdoPage() {
                 getOP20Balance={getOP20Balance}
                 getOP20ContractCached={getOP20ContractCached}
                 onBalanceRefresh={() => {}}
+                effectiveNetwork={effectiveNetwork}
             />
         </div>
     );

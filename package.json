@@ -15,6 +15,7 @@
     "@btc-vision/transaction": "^1.8.0",
     "@btc-vision/walletconnect": "^1.10.4",
     "opnet": "^1.8.2",
+    "pptxgenjs": "^4.0.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.6.1"
