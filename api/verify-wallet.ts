@@ -144,16 +144,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             outputs: [{ name: 'success', type: ABIDataTypes.BOOL }],
         }];
 
-        // Resolve the user's wallet to an Address object
-        const pubKeyInfo = await provider.getPublicKeyInfo(walletAddress, true);
-        if (!pubKeyInfo || !pubKeyInfo.originalPubKey) {
+        // Resolve the user's wallet to an Address object (isContract = false for user wallets)
+        const userAddress = await provider.getPublicKeyInfo(walletAddress, false);
+        if (!userAddress) {
             return res.status(400).json({
                 error: 'Wallet address not found on-chain. Make sure you have made at least one transaction.',
             });
         }
 
         const contract = getContract(IDO_ADDRESS, WHITELIST_ABI, provider, NETWORK, wallet.address);
-        const sim = await (contract as any).setWhitelist(pubKeyInfo.originalPubKey, true);
+        const sim = await (contract as any).setWhitelist(userAddress, true);
         const receipt = await sim.sendTransaction({
             signer: wallet.keypair,
             mldsaSigner: wallet.mldsaKeypair,
