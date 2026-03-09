@@ -38,10 +38,19 @@ interface PhaseLabel {
     rate: string;
 }
 
-const PHASE_LABELS: Record<number, PhaseLabel> = {
+// Testnet IDO: only Phase 1 has a bonus (the testnet contract uses 0 bps for P2/P3)
+const PHASE_LABELS_TESTNET: Record<number, PhaseLabel> = {
     1: { name: 'PHASE 1', bonus: '+50%', rate: '75 BLOCK / MOTO' },
     2: { name: 'PHASE 2', bonus: 'BASE', rate: '50 BLOCK / MOTO' },
     3: { name: 'PHASE 3', bonus: 'BASE', rate: '50 BLOCK / MOTO' },
+    0: { name: 'SOLD OUT', bonus: '\u2014', rate: '\u2014' },
+};
+
+// Mainnet IDO: degressive bonus structure to incentivize early buyers
+const PHASE_LABELS_MAINNET: Record<number, PhaseLabel> = {
+    1: { name: 'PHASE 1', bonus: '+50%', rate: '75 BLOCK / MOTO' },
+    2: { name: 'PHASE 2', bonus: '+25%', rate: '62.5 BLOCK / MOTO' },
+    3: { name: 'PHASE 3', bonus: '+10%', rate: '55 BLOCK / MOTO' },
     0: { name: 'SOLD OUT', bonus: '\u2014', rate: '\u2014' },
 };
 
@@ -54,10 +63,16 @@ interface PhaseBreakdown {
     cap: string;
 }
 
-const PHASE_BREAKDOWN: PhaseBreakdown[] = [
+const PHASE_BREAKDOWN_TESTNET: PhaseBreakdown[] = [
     { phase: 1, bonus: '+50%', rate: '75', cap: '6,670,000' },
     { phase: 2, bonus: 'BASE', rate: '50', cap: '6,670,000' },
     { phase: 3, bonus: 'BASE', rate: '50', cap: '6,670,000' },
+];
+
+const PHASE_BREAKDOWN_MAINNET: PhaseBreakdown[] = [
+    { phase: 1, bonus: '+50%', rate: '75', cap: '6,670,000' },
+    { phase: 2, bonus: '+25%', rate: '62.5', cap: '6,670,000' },
+    { phase: 3, bonus: '+10%', rate: '55', cap: '6,670,000' },
 ];
 
 export default function IdoTab({
@@ -193,6 +208,8 @@ export default function IdoTab({
 
     const motoInput: number = parseFloat(motoAmount) || 0;
     const motoRaw: bigint = motoInput > 0 ? BitcoinUtils.expandToDecimals(motoInput, MOTO_DECIMALS) : 0n;
+    const PHASE_LABELS = effectiveNetwork === 'mainnet' ? PHASE_LABELS_MAINNET : PHASE_LABELS_TESTNET;
+    const PHASE_BREAKDOWN = effectiveNetwork === 'mainnet' ? PHASE_BREAKDOWN_MAINNET : PHASE_BREAKDOWN_TESTNET;
     const phaseInfo: PhaseLabel = PHASE_LABELS[phase] || PHASE_LABELS[0];
 
     const DECIMAL_DIFF: bigint = 10_000_000_000n;
