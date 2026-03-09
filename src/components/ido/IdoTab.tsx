@@ -112,12 +112,14 @@ export default function IdoTab({
     const [pendingBlockEstimate, setPendingBlockEstimate] = useState<bigint>(0n);
     const [infiniteApproval, setInfiniteApproval] = useState<boolean>(false);
 
-    // ─── X verification state ────────────────────────────────────
-    type VerifyStep = 'idle' | 'tweet' | 'submitting' | 'pending' | 'verified' | 'error';
+    // ─── Turnstile verification state ─────────────────────────────
+    const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAACf3vVNJJ3WtJoSx';
+    type VerifyStep = 'idle' | 'submitting' | 'pending' | 'verified' | 'error';
     const [verifyStep, setVerifyStep] = useState<VerifyStep>('idle');
-    const [tweetUrl, setTweetUrl] = useState<string>('');
     const [verifyError, setVerifyError] = useState<string>('');
     const pollWhitelistRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const turnstileRef = useRef<HTMLDivElement | null>(null);
+    const widgetIdRef = useRef<string | null>(null);
 
     // ─── Persist pending buy across page refreshes ────────────────
     const PENDING_KEY = 'ido_pending_buy';
@@ -286,16 +288,62 @@ export default function IdoTab({
         return () => {};
     }, [verifyStep]);
 
+    // ─── Turnstile widget rendering ─────────────────────────────────
+    useEffect((): (() => void) => {
+        if (!TURNSTILE_SITE_KEY || !whitelistBlocked || verifyStep !== 'idle') return () => {};
+        const renderWidget = (): void => {
+            if (!turnstileRef.current || !(window as any).turnstile) return;
+            if (widgetIdRef.current !== null) {
+                try { (window as any).turnstile.remove(widgetIdRef.current); } catch { /* */ }
+            }
+            widgetIdRef.current = (window as any).turnstile.render(turnstileRef.current, {
+                sitekey: TURNSTILE_SITE_KEY,
+                size: 'invisible',
+                callback: () => { /* token ready */ },
+            });
+        };
+        if ((window as any).turnstile) { renderWidget(); }
+        else {
+            const interval = setInterval(() => {
+                if ((window as any).turnstile) { clearInterval(interval); renderWidget(); }
+            }, 500);
+            return () => clearInterval(interval);
+        }
+        return () => {};
+    }, [TURNSTILE_SITE_KEY, whitelistBlocked, verifyStep]);
+
     const handleVerify = useCallback(async (): Promise<void> => {
-        if (!tweetUrl.trim()) { showToast('Paste your tweet URL', 'error'); return; }
         setVerifyStep('submitting');
         setVerifyError('');
+
+        // Get Turnstile token
+        let turnstileToken = '';
+        if ((window as any).turnstile && widgetIdRef.current != null) {
+            turnstileToken = (window as any).turnstile.getResponse(widgetIdRef.current) || '';
+            if (!turnstileToken) {
+                // Reset and wait for a fresh token (up to 15s)
+                (window as any).turnstile.reset(widgetIdRef.current);
+                await new Promise<void>((resolve, reject) => {
+                    const t = setTimeout(() => { clearInterval(check); reject(new Error('Captcha timeout')); }, 15_000);
+                    const check = setInterval(() => {
+                        const token: string | undefined = (window as any).turnstile?.getResponse(widgetIdRef.current!);
+                        if (token) { clearInterval(check); clearTimeout(t); turnstileToken = token; resolve(); }
+                    }, 500);
+                });
+            }
+        }
+
+        if (!turnstileToken) {
+            setVerifyStep('error');
+            setVerifyError('Captcha verification failed. Please refresh and try again.');
+            return;
+        }
 
         try {
             const resp = await fetch('/api/verify-tweet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tweetUrl: tweetUrl.trim(), walletAddress }),
+                body: JSON.stringify({ walletAddress, turnstileToken }),
             });
             const data = await resp.json();
 
@@ -306,7 +354,6 @@ export default function IdoTab({
             }
 
             if (resp.status === 409 && data.status === 'already_verified') {
-                // Already verified — just poll for on-chain confirmation
                 setVerifyStep('pending');
                 startPollingWhitelist();
                 return;
@@ -326,13 +373,7 @@ export default function IdoTab({
             setVerifyStep('error');
             setVerifyError('Network error — please try again');
         }
-    }, [tweetUrl, walletAddress, showToast, startPollingWhitelist]);
-
-    const tweetIntentUrl: string = walletAddress
-        ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            `Joining the $BLOCK IDO on @BlockPlex_btc! 🚀\n\nWallet: ${walletAddress}\n\n#BlockIDO`
-        )}`
-        : '';
+    }, [walletAddress, showToast, startPollingWhitelist]);
 
     const pollAllowanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const pollBuyRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -713,54 +754,17 @@ export default function IdoTab({
                                         <div className="ido-verify-icon">🔒</div>
                                         <div className="ido-verify-title">WALLET VERIFICATION REQUIRED</div>
                                         <div className="ido-verify-desc">
-                                            To prevent sybil attacks, verify your identity via X (Twitter) before participating in the IDO.
+                                            Verify your wallet to participate in the IDO. One verification per wallet, per network.
                                         </div>
                                         <div className="ido-verify-requirements">
-                                            <div className="ido-verify-req">✓ X account older than 30 days</div>
-                                            <div className="ido-verify-req">✓ At least 10 followers</div>
-                                            <div className="ido-verify-req">✓ One wallet per X account</div>
+                                            <div className="ido-verify-req">✓ One wallet per person</div>
+                                            <div className="ido-verify-req">✓ One verification per IP / network</div>
+                                            <div className="ido-verify-req">✓ Captcha anti-bot protection</div>
                                         </div>
-                                        <button className="ido-primary-btn ido-verify-btn" onClick={() => setVerifyStep('tweet')}>
-                                            VERIFY VIA X
+                                        <button className="ido-primary-btn ido-verify-btn" onClick={handleVerify}>
+                                            VERIFY WALLET
                                         </button>
-                                    </>
-                                )}
-
-                                {verifyStep === 'tweet' && (
-                                    <>
-                                        <div className="ido-verify-title">STEP 1 — POST A TWEET</div>
-                                        <div className="ido-verify-desc">
-                                            Post a tweet with your wallet address and the <strong>#BlockIDO</strong> hashtag, then paste the URL below.
-                                        </div>
-                                        <div className="ido-tweet-template">
-                                            <div className="ido-tweet-text">
-                                                Joining the $BLOCK IDO on @BlockPlex_btc! 🚀<br />
-                                                <br />
-                                                Wallet: {walletAddress}<br />
-                                                <br />
-                                                #BlockIDO
-                                            </div>
-                                            <a href={tweetIntentUrl} target="_blank" rel="noopener noreferrer" className="ido-tweet-btn">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                                                </svg>
-                                                POST TWEET
-                                            </a>
-                                        </div>
-                                        <div className="ido-verify-step2-label">STEP 2 — PASTE TWEET URL</div>
-                                        <input
-                                            className="ido-input"
-                                            type="url"
-                                            placeholder="https://x.com/yourname/status/..."
-                                            value={tweetUrl}
-                                            onChange={(e: ChangeEvent<HTMLInputElement>) => setTweetUrl(e.target.value)}
-                                        />
-                                        <button className="ido-primary-btn" onClick={handleVerify} disabled={!tweetUrl.trim()}>
-                                            VERIFY
-                                        </button>
-                                        <button className="ido-back-btn" onClick={() => setVerifyStep('idle')}>
-                                            ← BACK
-                                        </button>
+                                        <div ref={turnstileRef} style={{ display: 'none' }} />
                                     </>
                                 )}
 
@@ -768,7 +772,7 @@ export default function IdoTab({
                                     <div className="ido-verify-loading">
                                         <div className="ido-buy-pending-spinner ido-spinner-lg" />
                                         <div className="ido-verify-title">VERIFYING...</div>
-                                        <div className="ido-verify-desc">Checking your tweet and sending whitelist transaction...</div>
+                                        <div className="ido-verify-desc">Checking captcha and sending whitelist transaction...</div>
                                     </div>
                                 )}
 
@@ -795,7 +799,7 @@ export default function IdoTab({
                                         <div className="ido-verify-error-icon">⚠</div>
                                         <div className="ido-verify-title">VERIFICATION FAILED</div>
                                         <div className="ido-verify-error-msg">{verifyError}</div>
-                                        <button className="ido-primary-btn" onClick={() => { setVerifyStep('tweet'); setVerifyError(''); }}>
+                                        <button className="ido-primary-btn" onClick={() => { setVerifyStep('idle'); setVerifyError(''); }}>
                                             TRY AGAIN
                                         </button>
                                     </>

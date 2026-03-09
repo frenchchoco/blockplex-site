@@ -2,24 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { kv } from '@vercel/kv';
 
 // ─── Config ──────────────────────────────────────────────────────
-const TWITTER_BEARER = process.env.TWITTER_BEARER_TOKEN || '';
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET || '';
 const OWNER_MNEMONIC = process.env.OWNER_MNEMONIC || '';
 const OPNET_RPC = process.env.OPNET_RPC || 'https://testnet.opnet.org';
 const NETWORK_NAME = process.env.VITE_NETWORK || 'testnet';
 const IDO_ADDRESS = process.env.BLOCK_IDO_ADDRESS || '';
 
-const MIN_ACCOUNT_AGE_DAYS = 30;
-const MIN_FOLLOWERS = 10;
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_S = 60;
 
 // ─── Helpers ─────────────────────────────────────────────────────
-function extractTweetId(url: string): string | null {
-    // Supports: x.com/user/status/123, twitter.com/user/status/123
-    const match = url.match(/(?:twitter\.com|x\.com)\/\w+\/status\/(\d+)/);
-    return match ? match[1] : null;
-}
-
 function getClientIp(req: VercelRequest): string {
     const forwarded = req.headers['x-forwarded-for'];
     if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
@@ -27,7 +19,30 @@ function getClientIp(req: VercelRequest): string {
     return req.socket?.remoteAddress || 'unknown';
 }
 
+/** Extract /24 subnet from IPv4 or /48 from IPv6 */
+function getSubnet(ip: string): string {
+    if (!ip) return 'unknown';
+    // IPv4: 1.2.3.4 → 1.2.3.0/24
+    if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) {
+        const parts = ip.split('.');
+        return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+    }
+    // IPv6: take first 3 groups → /48
+    if (ip.includes(':')) {
+        const expanded = ip.split(':').slice(0, 3).join(':');
+        return `${expanded}::/48`;
+    }
+    return ip;
+}
+
 // ─── Main handler ────────────────────────────────────────────────
+// Anti-sybil layers (same as BlockLottery faucet):
+// 1. Cloudflare Turnstile CAPTCHA (invisible) — blocks bots
+// 2. Turnstile score filtering — rejects low-confidence tokens
+// 3. 1 whitelist per wallet address (permanent)
+// 4. 1 whitelist per IP (permanent)
+// 5. 1 whitelist per /24 subnet (permanent) — blocks VPN/datacenter clusters
+// 6. Distributed UTXO lock — prevents concurrent TX conflicts
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -37,112 +52,71 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     // ── Validate env ──
-    if (!TWITTER_BEARER) return res.status(500).json({ error: 'Server misconfigured: missing X API token' });
+    if (!TURNSTILE_SECRET) return res.status(500).json({ error: 'Server misconfigured: missing Turnstile secret' });
     if (!OWNER_MNEMONIC) return res.status(500).json({ error: 'Server misconfigured: missing owner mnemonic' });
     if (!IDO_ADDRESS) return res.status(500).json({ error: 'Server misconfigured: missing IDO address' });
 
     // ── Parse body ──
-    const { tweetUrl, walletAddress } = req.body || {};
-    if (!tweetUrl || typeof tweetUrl !== 'string') {
-        return res.status(400).json({ error: 'Missing tweetUrl' });
-    }
+    const { walletAddress, turnstileToken } = req.body || {};
     if (!walletAddress || typeof walletAddress !== 'string') {
         return res.status(400).json({ error: 'Missing walletAddress' });
     }
-
-    const tweetId = extractTweetId(tweetUrl.trim());
-    if (!tweetId) {
-        return res.status(400).json({ error: 'Invalid tweet URL. Use a link like https://x.com/user/status/123' });
+    if (!turnstileToken || typeof turnstileToken !== 'string') {
+        return res.status(400).json({ error: 'Verification required' });
     }
 
-    // ── Rate limiting (IP-based) ──
+    // ── Turnstile verification ──
     const ip = getClientIp(req);
-    const rlKey = `rl:${ip}`;
+    try {
+        const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                secret: TURNSTILE_SECRET,
+                response: turnstileToken,
+                remoteip: ip,
+            }),
+        });
+        const tsData = await tsRes.json() as { success: boolean; score?: number };
+        if (!tsData.success) {
+            return res.status(400).json({ error: 'Captcha verification failed. Please try again.' });
+        }
+        // Reject low-confidence tokens (score 0-1, higher = more human)
+        if (typeof tsData.score === 'number' && tsData.score < 0.3) {
+            return res.status(400).json({ error: 'Captcha verification failed. Please try again.' });
+        }
+    } catch {
+        return res.status(502).json({ error: 'Captcha service unreachable. Please try again.' });
+    }
+
+    // ── Rate limiting (IP-based, short window) ──
+    const rlKey = `ido:rl:${ip}`;
     const rlCount = await kv.incr(rlKey);
     if (rlCount === 1) await kv.expire(rlKey, RATE_LIMIT_WINDOW_S);
     if (rlCount > RATE_LIMIT_MAX) {
         return res.status(429).json({ error: 'Too many requests. Please wait a minute.', retry: false });
     }
 
-    // ── Check if wallet already verified ──
-    const existingAuthor = await kv.get<string>(`wallet:${walletAddress}`);
-    if (existingAuthor) {
+    // ── Anti-sybil checks (parallel KV lookups) ──
+    const subnet = getSubnet(ip);
+    const [existingWallet, existingIp, existingSubnet] = await Promise.all([
+        kv.get<string>(`ido:wallet:${walletAddress}`),
+        kv.get<string>(`ido:ip:${ip}`),
+        kv.get<string>(`ido:subnet:${subnet}`),
+    ]);
+
+    if (existingWallet) {
         return res.status(409).json({ error: 'This wallet is already verified.', status: 'already_verified' });
     }
-
-    // ── Check if tweet already used ──
-    const existingTweet = await kv.get<string>(`tweet:${tweetId}`);
-    if (existingTweet) {
-        return res.status(409).json({ error: 'This tweet has already been used for verification.' });
+    if (existingIp) {
+        return res.status(409).json({ error: 'Already verified from this network. One verification per IP.' });
     }
-
-    // ── Fetch tweet + author from X API v2 ──
-    let tweetData: {
-        data?: { text: string; author_id: string };
-        includes?: { users: Array<{ id: string; username: string; created_at: string; public_metrics: { followers_count: number } }> };
-        errors?: Array<{ detail: string }>;
-    };
-
-    try {
-        const xResp = await fetch(
-            `https://api.twitter.com/2/tweets/${tweetId}?expansions=author_id&user.fields=created_at,public_metrics&tweet.fields=text`,
-            { headers: { Authorization: `Bearer ${TWITTER_BEARER}` } },
-        );
-        if (!xResp.ok) {
-            const errBody = await xResp.text();
-            console.error('X API error:', xResp.status, errBody);
-            return res.status(502).json({ error: 'Failed to fetch tweet from X. Please try again.' });
-        }
-        tweetData = await xResp.json();
-    } catch (e) {
-        console.error('X API fetch error:', e);
-        return res.status(502).json({ error: 'Could not reach X API.' });
-    }
-
-    if (!tweetData.data || tweetData.errors?.length) {
-        return res.status(404).json({ error: 'Tweet not found. Make sure it is public.' });
-    }
-
-    // ── Validate tweet content ──
-    const tweetText = tweetData.data.text;
-    if (!tweetText.toLowerCase().includes('#blockido')) {
-        return res.status(400).json({ error: 'Tweet must include the #BlockIDO hashtag.' });
-    }
-    // Check if wallet address (full or truncated) is in the tweet
-    const addrInTweet = tweetText.includes(walletAddress) ||
-        (walletAddress.length > 20 && tweetText.includes(walletAddress.slice(0, 12)) && tweetText.includes(walletAddress.slice(-8)));
-    if (!addrInTweet) {
-        return res.status(400).json({ error: 'Tweet does not contain your wallet address.' });
-    }
-
-    // ── Validate author ──
-    const author = tweetData.includes?.users?.[0];
-    if (!author) {
-        return res.status(400).json({ error: 'Could not retrieve author info.' });
-    }
-
-    const accountAge = (Date.now() - new Date(author.created_at).getTime()) / (1000 * 60 * 60 * 24);
-    if (accountAge < MIN_ACCOUNT_AGE_DAYS) {
-        return res.status(403).json({
-            error: `X account must be at least ${MIN_ACCOUNT_AGE_DAYS} days old. Yours is ${Math.floor(accountAge)} days.`,
-        });
-    }
-
-    const followers = author.public_metrics.followers_count;
-    if (followers < MIN_FOLLOWERS) {
-        return res.status(403).json({
-            error: `X account must have at least ${MIN_FOLLOWERS} followers. You have ${followers}.`,
-        });
-    }
-
-    // ── Anti-sybil: one X account = one wallet ──
-    const existingWallet = await kv.get<string>(`twitter:${author.id}`);
-    if (existingWallet && existingWallet !== walletAddress) {
-        return res.status(409).json({ error: 'This X account is already linked to a different wallet.' });
+    if (existingSubnet) {
+        return res.status(409).json({ error: 'Already verified from this network. One verification per network.' });
     }
 
     // ── Distributed lock for UTXO contention ──
-    const lockKey = 'lock:whitelist-tx';
+    const lockKey = 'ido:lock:whitelist-tx';
     const lockAcquired = await kv.set(lockKey, Date.now().toString(), { nx: true, ex: 120 });
     if (!lockAcquired) {
         return res.status(429).json({ error: 'Verification in progress, please retry in a few seconds.', retry: true });
@@ -190,30 +164,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         const txId = receipt?.transactionId || null;
-        console.log(`[verify-tweet] Whitelist TX sent for @${author.username} → ${walletAddress}: ${txId}`);
+        console.log(`[verify-wallet] Whitelist TX sent for ${walletAddress} (IP: ${ip}): ${txId}`);
 
-        // ── Store mappings in KV ──
+        // ── Store anti-sybil keys in KV (permanent, no TTL) ──
+        const now = Date.now();
         await Promise.all([
-            kv.set(`twitter:${author.id}`, walletAddress),
-            kv.set(`wallet:${walletAddress}`, author.id),
-            kv.set(`tweet:${tweetId}`, JSON.stringify({
-                walletAddress,
-                authorId: author.id,
-                username: author.username,
-                txId,
-                timestamp: Date.now(),
-            })),
+            kv.set(`ido:wallet:${walletAddress}`, JSON.stringify({ ip, subnet, txId, timestamp: now })),
+            kv.set(`ido:ip:${ip}`, JSON.stringify({ wallet: walletAddress, timestamp: now })),
+            kv.set(`ido:subnet:${subnet}`, JSON.stringify({ wallet: walletAddress, ip, timestamp: now })),
         ]);
 
         return res.status(200).json({
             status: 'verified',
             message: 'Wallet whitelisted! Wait for the next block confirmation, then you can buy $BLOCK.',
             txId,
-            username: author.username,
         });
     } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error('[verify-tweet] On-chain TX error:', msg);
+        console.error('[verify-wallet] On-chain TX error:', msg);
         return res.status(500).json({ error: 'Failed to send whitelist transaction. Please try again later.' });
     } finally {
         // Always release the lock

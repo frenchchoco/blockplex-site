@@ -810,73 +810,7 @@
   display: block;
 }
 
-/* Tweet template */
-.ido-tweet-template {
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
 
-.ido-tweet-text {
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  text-align: left;
-  margin-bottom: 14px;
-  word-break: break-all;
-}
-
-.ido-tweet-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 22px;
-  background: #000;
-  color: #fff;
-  font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.ido-tweet-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
-}
-
-.ido-verify-step2-label {
-  font-family: var(--font-display);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-muted);
-  margin-bottom: 10px;
-  text-align: left;
-}
-
-.ido-back-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  cursor: pointer;
-  margin-top: 12px;
-  padding: 8px 16px;
-  transition: color 0.2s;
-}
-
-.ido-back-btn:hover {
-  color: var(--text-primary);
-}
 
 /* Verify loading / spinner */
 .ido-verify-loading {
