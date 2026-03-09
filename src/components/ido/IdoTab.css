@@ -544,6 +544,15 @@
   margin-bottom: 4px;
   justify-content: center;
 }
+.ido-pending-moto {
+  color: #ff4444;
+  font-weight: 600;
+  animation: ido-pulse-red 1.5s ease-in-out infinite;
+}
+@keyframes ido-pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 .ido-buy-pending-spinner {
   width: 16px;
   height: 16px;

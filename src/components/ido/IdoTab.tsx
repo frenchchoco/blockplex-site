@@ -110,6 +110,7 @@ export default function IdoTab({
     const [approvePending, setApprovePending] = useState<boolean>(false);
     const [buyPending, setBuyPending] = useState<boolean>(false);
     const [pendingBlockEstimate, setPendingBlockEstimate] = useState<bigint>(0n);
+    const [pendingMotoSpent, setPendingMotoSpent] = useState<bigint>(0n);
     const [infiniteApproval, setInfiniteApproval] = useState<boolean>(false);
 
     // ─── Turnstile verification state ─────────────────────────────
@@ -123,12 +124,13 @@ export default function IdoTab({
 
     // ─── Persist pending buy across page refreshes ────────────────
     const PENDING_KEY = 'ido_pending_buy';
-    const savePending = useCallback((estimate: bigint, prevTotalSold: bigint, prevUserPurchases: bigint): void => {
+    const savePending = useCallback((estimate: bigint, prevTotalSold: bigint, prevUserPurchases: bigint, motoSpent: bigint): void => {
         try {
             localStorage.setItem(PENDING_KEY, JSON.stringify({
                 estimate: estimate.toString(),
                 prevTotalSold: prevTotalSold.toString(),
                 prevUserPurchases: prevUserPurchases.toString(),
+                motoSpent: motoSpent.toString(),
                 ts: Date.now(),
             }));
         } catch { /* localStorage unavailable */ }
@@ -163,7 +165,7 @@ export default function IdoTab({
         setMotoAllowance(null);
         setAllowanceLoaded(false);
         setMotoAmount('');
-        setBuyPending(false);
+        setBuyPending(false); setPendingMotoSpent(0n);
         setPendingBlockEstimate(0n);
     }, [address]);
 
@@ -419,7 +421,7 @@ export default function IdoTab({
             if (Date.now() - startTime > MAX_POLL_MS) {
                 if (pollBuyRef.current) clearInterval(pollBuyRef.current);
                 pollBuyRef.current = null;
-                setBuyPending(false);
+                setBuyPending(false); setPendingMotoSpent(0n);
                 setPendingBlockEstimate(0n);
                 clearPending();
                 showToast('Buy confirmation timed out — check your balance manually', 'info');
@@ -450,7 +452,7 @@ export default function IdoTab({
                     setPaused(!!info.paused);
                     setWhitelistEnabled(!!info.whitelistEnabled);
                     setUserPurchases(newUserPurchases);
-                    setBuyPending(false);
+                    setBuyPending(false); setPendingMotoSpent(0n);
                     setPendingBlockEstimate(0n);
                     clearPending();
                     // Refresh MOTO balance + header balances
@@ -480,6 +482,7 @@ export default function IdoTab({
             if (est > 0n) {
                 setBuyPending(true);
                 setPendingBlockEstimate(est);
+                setPendingMotoSpent(BigInt(saved.motoSpent || '0'));
                 startPollingBuy(prevTotal, prevUser);
             }
         } catch { /* ignore */ }
@@ -556,7 +559,8 @@ export default function IdoTab({
             const est = received > 0n ? received : estimatedBlock;
             setBuyPending(true);
             setPendingBlockEstimate(est);
-            savePending(est, totalSold, userPurchases);
+            setPendingMotoSpent(motoRaw);
+            savePending(est, totalSold, userPurchases, motoRaw);
             setMotoAmount('');
             // Start polling for on-chain confirmation (every 10s, up to 1h)
             startPollingBuy(totalSold, userPurchases);
@@ -743,7 +747,12 @@ export default function IdoTab({
                         {isConnected && (
                             <div className="ido-balance-row">
                                 <span className="ido-mono">YOUR MOTO BALANCE</span>
-                                <span className="ido-mono ido-orange">{formatMoto(motoBalance)} MOTO</span>
+                                <span className="ido-mono ido-orange">
+                                    {formatMoto(motoBalance)} MOTO
+                                    {buyPending && pendingMotoSpent > 0n && (
+                                        <span className="ido-pending-moto"> (-{formatMoto(pendingMotoSpent)})</span>
+                                    )}
+                                </span>
                             </div>
                         )}
 
