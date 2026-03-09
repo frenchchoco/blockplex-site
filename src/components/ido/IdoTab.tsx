@@ -583,8 +583,8 @@ export default function IdoTab({
                                     <span>Infinite approval</span>
                                     <span className="ido-infinite-hint">
                                         {infiniteApproval
-                                            ? 'No re-approval needed — revoke anytime via BlockRevoke'
-                                            : 'Limited to 10,000 MOTO — covers full wallet cap'}
+                                            ? 'Unlimited MOTO allowance — revoke anytime via BlockRevoke'
+                                            : 'Approves 10,000 MOTO (no re-approval needed for future buys)'}
                                     </span>
                                 </label>
                                 <button
