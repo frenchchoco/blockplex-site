@@ -747,6 +747,198 @@
   color: var(--accent-orange);
 }
 
+/* ─── X Verification Panel ────────────────────────────────────── */
+.ido-verify-panel {
+  padding: 28px 20px;
+  text-align: center;
+  margin-bottom: 16px;
+  background: rgba(255, 150, 50, 0.04);
+  border: 1px solid rgba(255, 150, 50, 0.15);
+  border-radius: 12px;
+}
+
+.ido-verify-icon {
+  font-size: 36px;
+  margin-bottom: 14px;
+}
+
+.ido-verify-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.ido-verify-desc {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  max-width: 400px;
+  margin: 0 auto 18px;
+}
+
+.ido-verify-desc strong {
+  color: var(--accent-orange);
+}
+
+.ido-verify-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 auto 22px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  max-width: 300px;
+}
+
+.ido-verify-req {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-align: left;
+  letter-spacing: 0.02em;
+}
+
+.ido-verify-btn {
+  max-width: 260px;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Tweet template */
+.ido-tweet-template {
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.ido-tweet-text {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  text-align: left;
+  margin-bottom: 14px;
+  word-break: break-all;
+}
+
+.ido-tweet-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  background: #000;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ido-tweet-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.ido-verify-step2-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.ido-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  cursor: pointer;
+  margin-top: 12px;
+  padding: 8px 16px;
+  transition: color 0.2s;
+}
+
+.ido-back-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Verify loading / spinner */
+.ido-verify-loading {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.ido-spinner-lg {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Verify success */
+.ido-verify-success {
+  padding: 20px 0;
+  text-align: center;
+}
+
+.ido-verify-check {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 255, 136, 0.1);
+  border: 2px solid #00ff88;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: #00ff88;
+  margin: 0 auto 14px;
+  animation: ido-scale-in 0.4s ease-out;
+}
+
+@keyframes ido-scale-in {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Verify error */
+.ido-verify-error-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+  color: var(--accent-pink);
+}
+
+.ido-verify-error-msg {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--accent-pink);
+  line-height: 1.5;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  background: rgba(255, 60, 142, 0.06);
+  border: 1px solid rgba(255, 60, 142, 0.15);
+  border-radius: 8px;
+  text-align: left;
+}
+
 /* ─── Toast ──────────────────────────────────────────────────── */
 .ido-toast {
   position: fixed;
