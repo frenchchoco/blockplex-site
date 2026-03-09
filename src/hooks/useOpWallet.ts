@@ -187,7 +187,7 @@ export const useOpWallet = (): UseOpWalletReturn => {
         address,
         isConnected,
         connecting,
-        network: network as string | null,
+        network: typeof network === 'string' ? network : network?.bech32 === 'tb' ? 'testnet' : network?.bech32 === 'bc' ? 'mainnet' : NETWORK_NAME,
         provider,
         btcBalance,
         walletType,
