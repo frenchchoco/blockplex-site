@@ -30,6 +30,22 @@ const MAINNET_CONTRACTS: ContractAddresses = {
 export const CONTRACTS: ContractAddresses =
     NETWORK_NAME === 'mainnet' ? MAINNET_CONTRACTS : TESTNET_CONTRACTS;
 
+// ─── Human-readable opt1 addresses (for display) ────────────
+interface DisplayAddresses {
+    BLOCK_TOKEN: string;
+}
+
+const TESTNET_DISPLAY: DisplayAddresses = {
+    BLOCK_TOKEN: 'opt1sqrzm2tgmnxcap43ggza82238js8p3uwphqskpsal',
+};
+
+const MAINNET_DISPLAY: DisplayAddresses = {
+    BLOCK_TOKEN: import.meta.env.VITE_BLOCK_TOKEN_OPT1 || '',
+};
+
+export const DISPLAY_ADDRESSES: DisplayAddresses =
+    NETWORK_NAME === 'mainnet' ? MAINNET_DISPLAY : TESTNET_DISPLAY;
+
 // Validate addresses at startup
 const HEX_RE = /^0x[0-9a-f]{64}$/;
 for (const [name, addr] of Object.entries(CONTRACTS)) {
