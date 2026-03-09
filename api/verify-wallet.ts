@@ -132,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const provider = new JSONRpcProvider({ url: OPNET_RPC, network: NETWORK });
 
         const mnemonic = new Mnemonic(OWNER_MNEMONIC, '', NETWORK, MLDSASecurityLevel.LEVEL2);
-        const wallet = mnemonic.deriveOPWallet(AddressTypes.P2TR, 0);
+        const wallet = mnemonic.deriveOPWallet(AddressTypes.P2TR, 1);
 
         const WHITELIST_ABI = [{
             name: 'setWhitelist',

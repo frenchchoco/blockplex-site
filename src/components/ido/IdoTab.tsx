@@ -340,7 +340,7 @@ export default function IdoTab({
         }
 
         try {
-            const resp = await fetch('/api/verify-tweet', {
+            const resp = await fetch('/api/verify-wallet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ walletAddress, turnstileToken }),
