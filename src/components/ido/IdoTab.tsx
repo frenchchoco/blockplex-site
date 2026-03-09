@@ -96,6 +96,22 @@ export default function IdoTab({
     const [pendingBlockEstimate, setPendingBlockEstimate] = useState<bigint>(0n);
     const [infiniteApproval, setInfiniteApproval] = useState<boolean>(false);
 
+    // ─── Persist pending buy across page refreshes ────────────────
+    const PENDING_KEY = 'ido_pending_buy';
+    const savePending = useCallback((estimate: bigint, prevTotalSold: bigint, prevUserPurchases: bigint): void => {
+        try {
+            localStorage.setItem(PENDING_KEY, JSON.stringify({
+                estimate: estimate.toString(),
+                prevTotalSold: prevTotalSold.toString(),
+                prevUserPurchases: prevUserPurchases.toString(),
+                ts: Date.now(),
+            }));
+        } catch { /* localStorage unavailable */ }
+    }, []);
+    const clearPending = useCallback((): void => {
+        try { localStorage.removeItem(PENDING_KEY); } catch { /* */ }
+    }, []);
+
     const loadIDOInfo = useCallback(async (): Promise<void> => {
         if (!provider || !CONTRACTS.BLOCK_IDO) return;
         try {
@@ -251,6 +267,7 @@ export default function IdoTab({
                 pollBuyRef.current = null;
                 setBuyPending(false);
                 setPendingBlockEstimate(0n);
+                clearPending();
                 showToast('Buy confirmation timed out — check your balance manually', 'info');
                 return;
             }
@@ -281,6 +298,7 @@ export default function IdoTab({
                     setUserPurchases(newUserPurchases);
                     setBuyPending(false);
                     setPendingBlockEstimate(0n);
+                    clearPending();
                     // Refresh MOTO balance + header balances
                     loadUserData();
                     if (onBalanceRefresh) onBalanceRefresh();
@@ -293,6 +311,26 @@ export default function IdoTab({
             }
         }, 10_000); // every 10s
     }, [readContract, address, loadUserData, onBalanceRefresh, showToast]);
+
+    // Restore pending buy from localStorage on mount
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(PENDING_KEY);
+            if (!raw) return;
+            const saved = JSON.parse(raw);
+            const age = Date.now() - (saved.ts || 0);
+            if (age > 60 * 60_000) { clearPending(); return; } // expired (>1h)
+            const est = BigInt(saved.estimate || '0');
+            const prevTotal = BigInt(saved.prevTotalSold || '0');
+            const prevUser = BigInt(saved.prevUserPurchases || '0');
+            if (est > 0n) {
+                setBuyPending(true);
+                setPendingBlockEstimate(est);
+                startPollingBuy(prevTotal, prevUser);
+            }
+        } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         return () => {
@@ -361,8 +399,10 @@ export default function IdoTab({
                 showToast('Buy TX sent! Waiting for block confirmation...', 'success');
             }
             // Store pending state so UI shows "waiting" until on-chain confirm
+            const est = received > 0n ? received : estimatedBlock;
             setBuyPending(true);
-            setPendingBlockEstimate(received > 0n ? received : estimatedBlock);
+            setPendingBlockEstimate(est);
+            savePending(est, totalSold, userPurchases);
             setMotoAmount('');
             // Start polling for on-chain confirmation (every 10s, up to 1h)
             startPollingBuy(totalSold, userPurchases);
