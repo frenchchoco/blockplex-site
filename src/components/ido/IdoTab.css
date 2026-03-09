@@ -181,12 +181,14 @@
   position: absolute;
   top: 0;
   height: 100%;
+  min-width: 8px;
   border-radius: 3px;
   background: rgba(100, 200, 255, 0.6);
   animation: ido-pulse 1.4s ease-in-out infinite;
 }
 .ido-progress-pending.ido-pending-orange {
   background: rgba(247, 147, 26, 0.5);
+  min-width: 8px;
   animation: ido-pulse-orange 1.4s ease-in-out infinite;
 }
 @keyframes ido-pulse {
